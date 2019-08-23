@@ -1,5 +1,5 @@
 const uint8_t maxMessageLength = 8;//max number of bytes in an incoming message
-const byte terminator = 127;//byte representing end of message
+const byte terminator = 254;//byte representing end of message
 
 const uint8_t serialTimeOutTime = 50;//ms
 byte currentMessage[maxMessageLength];//array containing bytes of the incoming message in order
@@ -54,10 +54,10 @@ void repeat()
   byte* incoming = getIncomingMessage();
   for(int i = 0; i < maxMessageLength;i++)
   {
-    Serial.print(String(incoming[i])+ " ");
+    Serial.print(char((incoming[i])));
     if(incoming[i] == terminator)
     {
-      break;
+      return;
     }
     
   }
