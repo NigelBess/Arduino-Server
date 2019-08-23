@@ -1,7 +1,7 @@
-const uint8_t maxMessageLength = 10;//max number of bytes in an incoming message
-const char terminator = 127;//byte representing end of message
+const uint8_t maxMessageLength = 8;//max number of bytes in an incoming message
+const byte terminator = 127;//byte representing end of message
 
-int serialTimeOutTime = 50;//ms
+const uint8_t serialTimeOutTime = 50;//ms
 byte currentMessage[maxMessageLength];//array containing bytes of the incoming message in order
 
 void setup() 
@@ -21,10 +21,10 @@ void loop()
 }
 void sendMessage(String msg)
 {
-  Serial.print(msg+terminator);
+  Serial.print(msg+String(char(terminator)));
 }
 
-char* getIncomingMessage()
+byte* getIncomingMessage()
 {
   //returns incoming message as a byte array.
   //values after terminator will be zero
@@ -32,39 +32,48 @@ char* getIncomingMessage()
   //and in this example maxMessageLength is 5
   //this function returns: {6, 7, [terminator], 0, 0}
   uint8_t index = 0;
-  char* out = new char[maxMessageLength];
+  byte* out = new byte[maxMessageLength];
   while(index<maxMessageLength)
   {
-    char currentByte;
+    byte currentByte;
     unsigned long int startMessageTime = millis();
     do
     {
       currentByte = Serial.read();
     }
-    while((currentByte == -1)&&((millis()-startMessageTime))<serialTimeOutTime);
-    if (currentByte == -1) return out;
+    while((currentByte == 255)&&((millis()-startMessageTime))<serialTimeOutTime);
+    if (currentByte == 255) return out;
     out[index] = currentByte;
     index++;
     if(currentByte==terminator) return out;
   }
   return out;
 }
-void parse()
-{
-  char* incoming = getIncomingMessage();
-  
-}
 void repeat()
 {
-  char* incoming = getIncomingMessage();
+  byte* incoming = getIncomingMessage();
   for(int i = 0; i < maxMessageLength;i++)
   {
-    Serial.print(incoming[i]);
+    Serial.print(String(incoming[i])+ " ");
     if(incoming[i] == terminator)
     {
-      return;
+      break;
     }
     
   }
-  Serial.print(terminator);
+  Serial.print(char(terminator));
 }
+
+
+//void parse(char* message)
+//{
+//  char function = message[0];
+//  switch(function)
+//  {
+//    case 0:
+//      pinMode(int(message(1),int(message(2))));
+//    case 1:
+//      pinMode
+//  }
+//  
+//}

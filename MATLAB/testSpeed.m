@@ -12,7 +12,7 @@ disp('connected')
 tic
 n = 1E2;
 for i = 1:n
-    fwrite(com,[33,126,com.Terminator]);
+    fwrite(com,[254,253,126,com.Terminator]);
     disp(native2unicode(fgetl(com)));
 end
 disp("time per com: "+num2str(toc/n));
