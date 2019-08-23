@@ -7,8 +7,9 @@ byte currentMessage[maxMessageLength];//array containing bytes of the incoming m
 void setup() 
 {
   Serial.begin(250000);
-  Serial.flush();
+  
   Serial.setTimeout(serialTimeOutTime);
+  Serial.flush();
   sendMessage("on");
 }
 
