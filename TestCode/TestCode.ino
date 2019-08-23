@@ -13,14 +13,12 @@ void loop()
   if(Serial.available()>0)
   {
     char in = Serial.read();
-    Serial.print("int(char): ");
-    Serial.println(int(in));
-    Serial.print("(int)char: ");
-    Serial.println((int)in);
-    Serial.print("byte(char): ");
-    Serial.println(byte(in));
-    Serial.print("(byte)char: ");
-    Serial.println((byte)in);
+    Serial.print("int(A1): ");
+    Serial.println(int(A1));
+     Serial.print("int(OUTPUT): ");
+    Serial.println(int(OUTPUT));
+     Serial.print("int(INPUT_PULLUP): ");
+    Serial.println(int(INPUT_PULLUP));
     
   } 
 
