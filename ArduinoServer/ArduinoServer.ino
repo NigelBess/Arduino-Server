@@ -12,7 +12,7 @@ byte* returnMessage = new byte[maxMessageLength];
 
 const uint8_t maxPinNum = 19;
 const uint8_t maxPinType = 2;
-const uint8_t maxDigitalPinState = 1;
+const uint8_t maxDigitalState = 1;
 
 void setup() 
 {
@@ -20,14 +20,14 @@ void setup()
   
   Serial.setTimeout(serialTimeOutTime);
   Serial.flush();
-  sendMessage("on");
+  sendMessage("Arduino Uno running server code by Nigel Bess: https://github.com/NigelBess/Arduino-Server");
 }
 
 void loop() 
 {
   if(Serial.available()>0)
   {
-    repeat();
+    parse(getIncomingMessage());
   } 
 }
 void sendMessage(String msg)
@@ -88,14 +88,21 @@ void parse(byte* message)
         error();
         return;
       }
-      pinMode(uint8_t(message[1]),uint8_t(message[2]));
+      pinMode(message[1],message[2]);
       success();
       return;
     case 1://digitalWrite(pinNumber,state)
+    if(message[1]>maxPinNum || message[2]>maxDigitalState)//pin out of range or state not defined
+      {
+        error();
+        return;
+      }
+      digitalWrite(message[1],message[2]);
+      success();
     return;
   }
+  error();
 }
-
 void resetReturnMessage()
 {
   //sets the return message to the error message
