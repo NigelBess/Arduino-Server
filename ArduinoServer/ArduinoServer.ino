@@ -1,5 +1,5 @@
 const uint8_t maxMessageLength = 10;//max number of bytes in an incoming message
-const char terminator = ' ';//incoming byte representing end of message
+const char terminator = 127;//byte representing end of message
 
 int serialTimeOutTime = 50;//ms
 byte currentMessage[maxMessageLength];//array containing bytes of the incoming message in order
@@ -21,7 +21,7 @@ void loop()
 }
 void sendMessage(String msg)
 {
-  Serial.print(msg+" ");
+  Serial.print(msg+terminator);
 }
 
 char* getIncomingMessage()
@@ -49,6 +49,11 @@ char* getIncomingMessage()
   }
   return out;
 }
+void parse()
+{
+  char* incoming = getIncomingMessage();
+  
+}
 void repeat()
 {
   char* incoming = getIncomingMessage();
@@ -59,6 +64,7 @@ void repeat()
     {
       return;
     }
+    
   }
-  Serial.print(' ');
+  Serial.print(terminator);
 }
