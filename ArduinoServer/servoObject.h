@@ -1,18 +1,19 @@
 #ifndef ServoObject_H
 #define ServoObject_H
 
+#include "PinObject.h"
 #include <Servo.h>
 
-class ServoObject
+class ServoObject : public PinObject
 {
   protected: 
   
-  uint8_t pin = 253;
   Servo servo;
   
   public:
-  ServoObject(uint8_t pin)
+  ServoObject(uint8_t pinNum)
   {
+    pin = pinNum;
     servo.attach(pin);
   }
   void detach()
@@ -22,10 +23,6 @@ class ServoObject
   void write(uint8_t pos)
   {
     servo.write(pos);
-  }
-  uint8_t getPin()
-  {
-    return pin;
   }
 };
   

@@ -1,4 +1,6 @@
+#include "PinObject.h"
 #include "ServoObject.h"
+
 
 const uint8_t maxMessageLength = 8;//max number of bytes in an incoming message
 
@@ -144,12 +146,12 @@ void parse(byte* message)
       addServo(message[1]) ? success() : error();
       return;
     case 6://writeServo(pinNumber,value)
-      if(message[1]>maxPinNum || message[2]>maxAnalogValue)
+      if(message[1]>maxPinNum || message[2]>180)//pin out of range or servo angle out of range
       {
         error();
         return;
       }
-      writeServo(message[2]) ? success() : error();
+      writeServo(message[1],message[2]) ? success() : error();
       return;
     case 253://checkConnection
       if(message[1]==0)
@@ -205,27 +207,59 @@ void sendDeviceInfo()
 {
   sendMessage(F("Arduino Uno running server code by Nigel Bess: https://github.com/NigelBess/Arduino-Server"));
 }
-bool addServo(uint8_t pin)
+bool pinAvailable(uint8_t pin, PinObject** objectSlots,uint8_t size)
 {
-  for(int i = 0;i<=maxServos;i++)
+  for(int i = 0;i<size;i++)
   {
-    if(servos[i]!=NULL && ((*servos[i]).getPin()==pin))
+    if(objectSlots[i]!=NULL && ((*objectSlots[i]).getPin()==pin))
     {
       return false;
     }
   }
-  bool availableServoSlot = false;
-  int index = 0;
-  for(int i = 0;i<=maxServos;i++)
+  return true;
+}
+uint8_t getAvailableSlot(void** objectSlots, uint8_t size)
+{
+  for(int i = 0;i<size;i++)
   {
-    if(servos[i]==NULL)
+    if(objectSlots[i]==NULL)
     {
-      index = i;
-      availableServoSlot = true;
+      return i;
     }
   }
-  if(!availableServoSlot) return false;
+}
+uint8_t getPinObjectByPin(uint8_t pin, PinObject** objectSlots,uint8_t size)
+{
+  for(int i = 0;i<size;i++)
+  {
+    if(objectSlots[i]!=NULL && ((*objectSlots[i]).getPin()==pin))
+    {
+      return i;
+    }
+  }
+  return 255;
+}
+uint8_t getServoIndexByPin(uint8_t pin)
+{
+  return getPinObjectByPin(pin,(PinObject**)servos,maxServos);
+}
+bool servoAvailable(uint8_t pin)
+{
+ return pinAvailable(pin,(PinObject**)servos,maxServos);
+}
+bool addServo(uint8_t pin)
+{
+  if (!servoAvailable(pin)) return false;
+  uint8_t index = getAvailableSlot((void**)servos,maxServos);
   ServoObject newServo = ServoObject(pin);
   servos[index] = &newServo;
+  return true;
+}
+bool writeServo(uint8_t pin, uint8_t value)
+{
+  if(servoAvailable(pin)) return false;
+  uint8_t index = getServoIndexByPin(pin);
+  if (index == 255) return false;
+  (*servos[index]).write(value);
   return true;
 }
