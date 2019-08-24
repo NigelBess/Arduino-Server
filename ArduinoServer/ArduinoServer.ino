@@ -153,6 +153,14 @@ void parse(byte* message)
       }
       writeServo(message[1],message[2]) ? success() : error();
       return;
+    case 7://detachServo(pinNumber)
+      if(message[1]>maxPinNum)
+      {
+        error();
+        return;
+      }
+      detachServo(message[1]) ? success() : error();
+      return;
     case 253://checkConnection
       if(message[1]==0)
       {
@@ -261,5 +269,17 @@ bool writeServo(uint8_t pin, uint8_t value)
   uint8_t index = getServoIndexByPin(pin);
   if (index == 255) return false;
   (*servos[index]).write(value);
+  return true;
+}
+bool detachServo(uint8_t pin)
+{
+   if(servoAvailable(pin)) return false;
+    uint8_t index = getServoIndexByPin(pin);
+    while(index != 255)
+    {
+      (*servos[index]).detach();
+      servos[index] = NULL;
+      index = getServoIndexByPin(pin);
+   }
   return true;
 }

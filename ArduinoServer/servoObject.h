@@ -19,6 +19,7 @@ class ServoObject : public PinObject
   void detach()
   {
     servo.detach();
+    pin = 255;
   }
   void write(uint8_t pos)
   {
