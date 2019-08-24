@@ -1,3 +1,5 @@
+#include "ServoObject.h"
+
 const uint8_t maxMessageLength = 8;//max number of bytes in an incoming message
 
 const byte nullByte = 255;//byte representing a lack of available Serial input
@@ -14,6 +16,9 @@ byte* returnMessage = new byte[maxMessageLength];
 const uint8_t maxPinNum = 19;
 const uint8_t maxPinType = 2;
 const uint8_t maxDigitalState = 1;
+
+const uint8_t maxServos = maxPinNum +1;
+ServoObject** servos = new ServoObject*[maxServos]{NULL};
 
 void setup() 
 {
@@ -130,7 +135,22 @@ void parse(byte* message)
       returnMessage[0] = map(analogRead(message[1]),0,1023,0,maxAnalogValue);
       reply();
       return;
-      
+    case 5://servo(pinNumber)
+      if(message[1]>maxPinNum)
+      {
+        error();
+        return;
+      }
+      addServo(message[1]) ? success() : error();
+      return;
+    case 6://writeServo(pinNumber,value)
+      if(message[1]>maxPinNum || message[2]>maxAnalogValue)
+      {
+        error();
+        return;
+      }
+      writeServo(message[2]) ? success() : error();
+      return;
     case 253://checkConnection
       if(message[1]==0)
       {
@@ -139,15 +159,7 @@ void parse(byte* message)
       }
       success();
       return;
-    case 5://servo(pinNumber)
-    if(message[1]>maxPinNum)
-      {
-        error();
-        return;
-      }
-      
-      success();
-      return;
+  
   }
   error();
 }
@@ -192,4 +204,28 @@ uint8_t analogValue(uint8_t input)
 void sendDeviceInfo()
 {
   sendMessage(F("Arduino Uno running server code by Nigel Bess: https://github.com/NigelBess/Arduino-Server"));
+}
+bool addServo(uint8_t pin)
+{
+  for(int i = 0;i<=maxServos;i++)
+  {
+    if(servos[i]!=NULL && ((*servos[i]).getPin()==pin))
+    {
+      return false;
+    }
+  }
+  bool availableServoSlot = false;
+  int index = 0;
+  for(int i = 0;i<=maxServos;i++)
+  {
+    if(servos[i]==NULL)
+    {
+      index = i;
+      availableServoSlot = true;
+    }
+  }
+  if(!availableServoSlot) return false;
+  ServoObject newServo = ServoObject(pin);
+  servos[index] = &newServo;
+  return true;
 }
