@@ -3,7 +3,7 @@ classdef Arduino < handle
         baudRate = 250000;
         terminator = 254;
         messageBufferSize = 512;
-        serialOpenDelay = 2;
+        serialOpenDelay = 0.1;
         serialTimeOut = 2;
     end
     properties(Access = private)
@@ -14,14 +14,33 @@ classdef Arduino < handle
     
     methods(Access = public)
         function obj = Arduino(port)
-            portName = port;
+            obj.portName = port;
             obj.messageBuffer = zeros(1,obj.messageBufferSize);
-            obj.comPort = serial(port);
+        end
+        function obj = connect(obj)
+            obj.comPort = serial(obj.portName);
             obj.comPort.BaudRate = obj.baudRate;
             fopen(obj.comPort);
+            flushoutput(obj.comPort);
             flushinput(obj.comPort);
             pause(obj.serialOpenDelay);
-            disp("Connected to " + obj.getMessageAsText());
+            obj.waitForConnection();
+            disp("Connected to " + obj.getDeviceInfo());  
+        end
+        function waitForConnection(obj)
+            connected = false;
+            while ~connected
+               	connected = obj.checkConnection();
+            end
+        end
+        function out = checkConnection(obj)
+            obj.sendMessage(253);
+            msg = obj.getMessage();
+            out = prod(msg == 0);
+        end
+        function out = getDeviceInfo(obj)
+            obj.sendMessage([253,0]);
+            out = obj.getMessageAsText();
         end
         function sendMessage(obj,msg)
             %sanitize input
@@ -37,6 +56,7 @@ classdef Arduino < handle
             %values of 255 get ignored by the arduino so we will delete
             %those
             msg(msg==255) = [];
+            flushoutput(obj.comPort);
             fwrite(obj.comPort,[msg,obj.terminator]);
         end
         function out = getMessage(obj)

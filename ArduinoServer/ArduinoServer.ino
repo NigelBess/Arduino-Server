@@ -4,9 +4,10 @@ const byte nullByte = 255;//byte representing a lack of available Serial input
 const byte terminator = 254;//byte representing end of message
 const byte errorByte = 253;//used in the return message to signify an error
 const byte successByte = 0;//used in the return message to signify successful execution of a function
+const byte maxAnalogValue = 252;//corresponds to 255 in arduino's analog read/write functions
 
 
-
+const uint8_t startDelay = 100;//ms
 const uint8_t serialTimeOutTime = 50;//ms
 byte* returnMessage = new byte[maxMessageLength];
 
@@ -19,8 +20,9 @@ void setup()
   Serial.begin(250000);
   
   Serial.setTimeout(serialTimeOutTime);
-  Serial.flush();
-  sendMessage("Arduino Uno running server code by Nigel Bess: https://github.com/NigelBess/Arduino-Server");
+  delay(startDelay);
+  sendDeviceInfo();
+  
 }
 
 void loop() 
@@ -32,6 +34,7 @@ void loop()
 }
 void sendMessage(String msg)
 {
+  Serial.flush();
   Serial.print(msg+String(char(terminator)));
 }
 
@@ -92,14 +95,32 @@ void parse(byte* message)
       success();
       return;
     case 1://digitalWrite(pinNumber,state)
-    if(message[1]>maxPinNum || message[2]>maxDigitalState)//pin out of range or state not defined
+      if(message[1]>maxPinNum || message[2]>maxDigitalState)//pin out of range or state not defined
+        {
+          error();
+          return;
+        }
+        digitalWrite(message[1],message[2]);
+        success();
+      return;
+    case 2://analogWrite(pinNumber,value)
+      if(message[1]>maxPinNum || message[2]>maxAnalogValue)//pin out of range or analogwrite value too high
       {
         error();
         return;
       }
-      digitalWrite(message[1],message[2]);
+      analogWrite(message[1],analogValue(message[2]));
+      returnMessage[0] = analogValue(message[2]);
+      reply();
+      return;
+    case 253://checkConnection
+      if(message[1]==0)
+      {
+        sendDeviceInfo();
+        return;
+      }
       success();
-    return;
+      return;
   }
   error();
 }
@@ -136,4 +157,12 @@ void reply()
       return;
     }
   }
+}
+uint8_t analogValue(uint8_t input)
+{
+  return map(input,0,maxAnalogValue,0,255);
+}
+void sendDeviceInfo()
+{
+  sendMessage(F("Arduino Uno running server code by Nigel Bess: https://github.com/NigelBess/Arduino-Server"));
 }

@@ -3,25 +3,34 @@ classdef Arduino < handle
         baudRate = 250000;
         terminator = 254;
         messageBufferSize = 512;
-        serialOpenDelay = 0.1;
-        serialTimeOut = 0.1;
+        serialOpenDelay = 2;
+        serialTimeOut = 2;
     end
     properties(Access = private)
         comPort;
         messageBuffer;
+        portName;
     end
     
     methods(Access = public)
         function obj = Arduino(port)
-            obj.closePorts;
+            portName = port;
             obj.messageBuffer = zeros(1,obj.messageBufferSize);
+            obj.connect();
+        end
+        function obj = connect(obj)
             obj.comPort = serial(port);
             obj.comPort.BaudRate = obj.baudRate;
             fopen(obj.comPort);
             flushinput(obj.comPort);
             pause(obj.serialOpenDelay);
-            disp("Connected to " + string(native2unicode(obj.getMessage())));
+            arduinoName = obj.getMessageAsText();
+            connected = false;
+            while
+            disp("Connected to " + arduinoName);
+            end
         end
+        
         function sendMessage(obj,msg)
             %sanitize input
             for i = 1:numel(msg)
@@ -45,6 +54,8 @@ classdef Arduino < handle
                 index = index+1;   
                 while (~obj.comPort.BytesAvailable)
                     if((obj.getTime()-startTime)>obj.serialTimeOut)
+                        obj.clearPort();
+                        error('Arduino has timed out or disconnected.');
                     end
                 end
                 newByte = fread(obj.comPort,1);
@@ -56,9 +67,21 @@ classdef Arduino < handle
             end
             out = obj.messageBuffer(1:index);
         end
+        function out = getMessageAsText(obj)
+            out = string(native2unicode(obj.getMessage()));
+        end
         function out = getTime(obj)
             c = clock;
             out = c(6);
+        end
+        function obj = clearPort(obj)
+            a = instrfind;
+            for i = 1:numel(a)
+                if contains(string(a(i).name),string(obj.portName))
+                    fclose(a(i));
+                    delete(a(i));
+                end
+            end
         end
     end
 end
