@@ -3,8 +3,8 @@ classdef Arduino < handle
         baudRate = 250000;
         terminator = 254;
         messageBufferSize = 512;
-        serialOpenDelay = 2;
-        serialTimeOut = 2;
+        connectionTimeOut = 2;
+        serialTimeOut = 0.1;
     end
     properties(Access = private)
         comPort;
@@ -14,23 +14,36 @@ classdef Arduino < handle
     
     methods(Access = public)
         function obj = Arduino(port)
-            portName = port;
+            obj.portName = port;
             obj.messageBuffer = zeros(1,obj.messageBufferSize);
-            obj.connect();
         end
         function obj = connect(obj)
-            obj.comPort = serial(port);
+            obj.comPort = serial(obj.portName);
             obj.comPort.BaudRate = obj.baudRate;
             fopen(obj.comPort);
+            flushoutput(obj.comPort);
             flushinput(obj.comPort);
-            pause(obj.serialOpenDelay);
-            arduinoName = obj.getMessageAsText();
-            connected = false;
-            while
-            disp("Connected to " + arduinoName);
+            obj.waitForConnection();
+            disp("Connected to " + obj.getDeviceInfo());  
+        end
+        function waitForConnection(obj)
+            connected = obj.checkConnection(timeOut);
+            while ~connected
+               	connected = obj.checkConnection();
             end
         end
-        
+        function out = checkConnection(obj,timeOut)
+            if nargin<2
+                timeOut = 
+            end
+            obj.sendMessage(253);
+            msg = obj.getMessage();
+            out = prod(msg == 0);
+        end
+        function out = getDeviceInfo(obj)
+            obj.sendMessage([253,0]);
+            out = obj.getMessageAsText();
+        end
         function sendMessage(obj,msg)
             %sanitize input
             for i = 1:numel(msg)
@@ -45,6 +58,7 @@ classdef Arduino < handle
             %values of 255 get ignored by the arduino so we will delete
             %those
             msg(msg==255) = [];
+            flushoutput(obj.comPort);
             fwrite(obj.comPort,[msg,obj.terminator]);
         end
         function out = getMessage(obj)

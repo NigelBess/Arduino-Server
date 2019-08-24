@@ -110,15 +110,42 @@ void parse(byte* message)
         return;
       }
       analogWrite(message[1],analogValue(message[2]));
-      returnMessage[0] = analogValue(message[2]);
+      success();
+      return;
+    case 3://digitalRead(pinNumber)
+      if(message[1]>maxPinNum)
+      {
+        error();
+        return;
+      }
+      returnMessage[0] = digitalRead(message[1]);
       reply();
       return;
+    case 4://analogRead(pinNumber)
+      if(message[1]>maxPinNum)
+      {
+        error();
+        return;
+      }
+      returnMessage[0] = map(analogRead(message[1]),0,1023,0,maxAnalogValue);
+      reply();
+      return;
+      
     case 253://checkConnection
       if(message[1]==0)
       {
         sendDeviceInfo();
         return;
       }
+      success();
+      return;
+    case 5://servo(pinNumber)
+    if(message[1]>maxPinNum)
+      {
+        error();
+        return;
+      }
+      
       success();
       return;
   }

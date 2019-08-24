@@ -3,8 +3,8 @@ classdef Arduino < handle
         baudRate = 250000;
         terminator = 254;
         messageBufferSize = 512;
-        serialOpenDelay = 0.1;
-        serialTimeOut = 2;
+        connectionTimeOut = 2;
+        serialTimeOut = 0.1;
     end
     properties(Access = private)
         comPort;
@@ -23,19 +23,25 @@ classdef Arduino < handle
             fopen(obj.comPort);
             flushoutput(obj.comPort);
             flushinput(obj.comPort);
-            pause(obj.serialOpenDelay);
             obj.waitForConnection();
             disp("Connected to " + obj.getDeviceInfo());  
         end
-        function waitForConnection(obj)
-            connected = false;
+        function waitForConnection(obj)  
+            connected = obj.checkConnection(true);
             while ~connected
                	connected = obj.checkConnection();
             end
         end
-        function out = checkConnection(obj)
+        function out = checkConnection(obj,firstTime)
+            if nargin<2
+                firstTime = false;
+            end
             obj.sendMessage(253);
-            msg = obj.getMessage();
+            if ~firstTime
+                msg = obj.getMessage();
+            else
+                msg = obj.getMessage(obj.connectionTimeOut);
+            end
             out = prod(msg == 0);
         end
         function out = getDeviceInfo(obj)
@@ -59,13 +65,16 @@ classdef Arduino < handle
             flushoutput(obj.comPort);
             fwrite(obj.comPort,[msg,obj.terminator]);
         end
-        function out = getMessage(obj)
+        function out = getMessage(obj,timeOutTime)
+            if nargin<2
+                timeOutTime = obj.serialTimeOut;
+            end
             index = 0;
             startTime = obj.getTime();
             while (index<=(obj.messageBufferSize-1))
                 index = index+1;   
                 while (~obj.comPort.BytesAvailable)
-                    if((obj.getTime()-startTime)>obj.serialTimeOut)
+                    if((obj.getTime()-startTime)>timeOutTime)
                         obj.clearPort();
                         error('Arduino has timed out or disconnected.');
                     end
