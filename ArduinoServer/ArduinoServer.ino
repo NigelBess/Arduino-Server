@@ -1,6 +1,6 @@
 #include "PinObject.h"
 #include "ServoObject.h"
-
+#include "Encoder.h"
 
 const uint8_t maxMessageLength = 8;//max number of bytes in an incoming message
 
@@ -22,6 +22,7 @@ const uint8_t numInterruptPins = 2;
 
 const uint8_t maxServos = maxPinNum +1;
 ServoObject** servos = new ServoObject*[maxServos]{NULL};
+Encoder** encoders = new Encoder*[numInterruptPins]{NULL};
 
 void setup() 
 {
@@ -94,34 +95,16 @@ void parse(byte* message)
   switch(function)
   {
     case 0://pinMode(pinNumber,pinType)
-      if(message[1]>maxPinNum || message[2]>maxPinType)//pin out of range or pinType not defined
-      {
-        error();
-        return;
-      }
-      pinMode(message[1],message[2]);
-      success();
+      setupPin(message[1],message[2]) ? success() : error();
       return;
     case 1://digitalWrite(pinNumber,state)
-      if(message[1]>maxPinNum || message[2]>maxDigitalState)//pin out of range or state not defined
-        {
-          error();
-          return;
-        }
-        digitalWrite(message[1],message[2]);
-        success();
+        writeDigital(message[1],message[2]) ? success() : error();
       return;
     case 2://analogWrite(pinNumber,value)
-      if(message[1]>maxPinNum || message[2]>maxAnalogValue)//pin out of range or analogwrite value too high
-      {
-        error();
-        return;
-      }
-      analogWrite(message[1],analogValue(message[2]));
-      success();
+      writeAnalog(message[1],(message[2])) ? success() : error();
       return;
     case 3://digitalRead(pinNumber)
-      if(message[1]>maxPinNum)
+      if(!validPin(message[1]))
       {
         error();
         return;
@@ -130,45 +113,26 @@ void parse(byte* message)
       reply();
       return;
     case 4://analogRead(pinNumber)
-      if(message[1]>maxPinNum)
+      if(!validPin(message[1]))
       {
         error();
-        return;
+      } else
+      {
+        returnMessage[0] = map(analogRead(message[1]),0,1023,0,maxAnalogValue);
+        reply();
       }
-      returnMessage[0] = map(analogRead(message[1]),0,1023,0,maxAnalogValue);
-      reply();
       return;
     case 5://servo(pinNumber)
-      if(message[1]>maxPinNum)
-      {
-        error();
-        return;
-      }
       addServo(message[1]) ? success() : error();
       return;
     case 6://writeServo(pinNumber,value)
-      if(message[1]>maxPinNum || message[2]>180)//pin out of range or servo angle out of range
-      {
-        error();
-        return;
-      }
       writeServo(message[1],message[2]) ? success() : error();
       return;
     case 7://detachServo(pinNumber)
-      if(message[1]>maxPinNum)
-      {
-        error();
-        return;
-      }
       detachServo(message[1]) ? success() : error();
       return;
     case 253://checkConnection
-      if(message[1]==0)
-      {
-        sendDeviceInfo();
-        return;
-      }
-      success();
+      message[1]==0 ? sendDeviceInfo() : success();
       return;
   
   }
@@ -208,6 +172,34 @@ void reply()
     }
   }
 }
+bool writeDigital(uint8_t pin, uint8_t state)
+{
+  if (!validPin(pin)) return false;
+  if(!pinAvailable(pin)) return false;
+  if (state>maxDigitalState) return false;
+  digitalWrite(pin,state);
+  return true;
+}
+bool writeAnalog(uint8_t pin, uint8_t value)
+{
+  if (!validPin(pin)) return false;
+  if(!pinAvailable(pin)) return false;
+  if(value>maxAnalogValue) return false;
+  analogWrite(pin,analogValue(value));
+  return true;
+}
+bool validPin(uint8_t pin)
+{
+  return pin<maxPinNum;
+}
+bool setupPin(uint8_t pin, uint8_t type)
+{
+  if (!validPin) return false;
+  if (!pinAvailable(pin)) return false;
+  if (type>maxPinType) return false;
+  pinMode(pin,type);
+  return true;
+}
 uint8_t analogValue(uint8_t input)
 {
   return map(input,0,maxAnalogValue,0,255);
@@ -216,7 +208,7 @@ void sendDeviceInfo()
 {
   sendMessage(F("Arduino Uno running server code by Nigel Bess: https://github.com/NigelBess/Arduino-Server"));
 }
-bool pinAvailable(uint8_t pin, PinObject** objectSlots,uint8_t size)
+bool pinAvailableInObjectArray(uint8_t pin, PinObject** objectSlots,uint8_t size)
 {
   for(int i = 0;i<size;i++)
   {
@@ -254,17 +246,29 @@ uint8_t getServoIndexByPin(uint8_t pin)
 }
 bool servoAvailable(uint8_t pin)
 {
- return pinAvailable(pin,(PinObject**)servos,maxServos);
+ return pinAvailableInObjectArray(pin,(PinObject**)servos,maxServos);
 }
+bool encoderAvailable(uint8_t pin)
+{
+  return pinAvailableInObjectArray(pin,(PinObject**)encoders,numInterruptPins);
+}
+bool pinAvailable(uint8_t pin)
+{
+  return servoAvailable(pin) && encoderAvailable(pin);
+}
+
 bool addServo(uint8_t pin)
 {
-  if (!servoAvailable(pin)) return false;
+  if (!validPin(pin)) return false;
+  if (!pinAvailable(pin)) return false;
   uint8_t index = getAvailableSlot((void**)servos,maxServos);
   servos[index] = new ServoObject(pin);
   return true;
 }
 bool writeServo(uint8_t pin, uint8_t value)
 {
+  if(!validPin(pin)) return false;
+  if(value > 180) return false;
   if(servoAvailable(pin)) return false;
   uint8_t index = getServoIndexByPin(pin);
   if (index == 255) return false;
@@ -273,6 +277,7 @@ bool writeServo(uint8_t pin, uint8_t value)
 }
 bool detachServo(uint8_t pin)
 {
+  if(!validPin(pin)) return false;
    if(servoAvailable(pin)) return false;
     uint8_t index = getServoIndexByPin(pin);
     while(index != 255)
@@ -282,5 +287,18 @@ bool detachServo(uint8_t pin)
       servos[index] = NULL;//dereference the memory
       index = getServoIndexByPin(pin);//check if there is another servo that uses this pin
    }
-  return true;
+  return true; 
+}
+
+
+void encoder0Interrupt()
+{
+  if(encoders[0] == NULL) return;
+  (*encoders[0]).interrupt();
+}
+
+void encoder1Interrupt()
+{
+  if(encoders[0] == NULL) return;
+  (*encoders[0]).interrupt();
 }

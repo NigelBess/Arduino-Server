@@ -6,22 +6,46 @@
 class Encoder : public PinObject
 {
   protected: 
-  
-  int count;
+  const uint8_t maxPinNum = 19;
+  int count = 0;
+  uint8_t secondaryPin = 253;
+  int8_t direction = 1;
   
   public:
   Encoder(uint8_t pinNum)
   {
     pin = pinNum;
   }
-  void detach()
+  void setSecondaryPin()
   {
-    servo.detach();
-    pin = 255;
+    uint8_t pinNum;
+    secondaryPin = pinNum;
   }
-  void write(uint8_t pos)
+  void setDirection(int8_t dir)
   {
-    servo.write(pos);
+    if (dir==0)
+    {
+      direction = 0;
+      return;
+    }
+    dir>0 ? direction = 1: direction = -1;
+  }
+  void interrupt()
+  {
+    if(secondaryPin>maxPinNum)//invalid pin or no secondary pin selected (non-quadrature encoder)
+    {
+      count+=direction; 
+      return;
+    }
+    digitalRead(secondaryPin)? count+=direction : count-=direction;
+  }
+  int getCount()
+  {
+    return count;
+  }
+  void reset()
+  {
+    count = 0;
   }
 };
   
