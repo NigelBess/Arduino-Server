@@ -13,12 +13,11 @@ void loop()
   if(Serial.available()>0)
   {
     char in = Serial.read();
-    Serial.print("int(A1): ");
-    Serial.println(int(A1));
-     Serial.print("int(OUTPUT): ");
-    Serial.println(int(OUTPUT));
-     Serial.print("int(INPUT_PULLUP): ");
-    Serial.println(int(INPUT_PULLUP));
+    int val = int(in-'0');
+     Serial.print("as int: ");
+    Serial.println(val);
+    Serial.print("as interrupt: ");
+    Serial.println(digitalPinToInterrupt(val));
     
   } 
 

@@ -18,6 +18,7 @@ byte* returnMessage = new byte[maxMessageLength];
 const uint8_t maxPinNum = 19;
 const uint8_t maxPinType = 2;
 const uint8_t maxDigitalState = 1;
+const uint8_t numInterruptPins = 2;
 
 const uint8_t maxServos = maxPinNum +1;
 ServoObject** servos = new ServoObject*[maxServos]{NULL};
@@ -259,8 +260,7 @@ bool addServo(uint8_t pin)
 {
   if (!servoAvailable(pin)) return false;
   uint8_t index = getAvailableSlot((void**)servos,maxServos);
-  ServoObject newServo = ServoObject(pin);
-  servos[index] = &newServo;
+  servos[index] = new ServoObject(pin);
   return true;
 }
 bool writeServo(uint8_t pin, uint8_t value)
@@ -277,9 +277,10 @@ bool detachServo(uint8_t pin)
     uint8_t index = getServoIndexByPin(pin);
     while(index != 255)
     {
-      (*servos[index]).detach();
-      servos[index] = NULL;
-      index = getServoIndexByPin(pin);
+      (*servos[index]).detach();//make arduino stop using the pin for servo communication
+      delete servos[index];//deallocate memory where the servo object was stored
+      servos[index] = NULL;//dereference the memory
+      index = getServoIndexByPin(pin);//check if there is another servo that uses this pin
    }
   return true;
 }
