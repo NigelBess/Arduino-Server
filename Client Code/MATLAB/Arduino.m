@@ -29,7 +29,7 @@ classdef Arduino < handle
             obj.waitForConnection();
             disp("Connected to " + obj.getDeviceInfo());  
         end
-        function setupPin(obj,pin,type)
+        function pinMode(obj,pin,type)
            pin = obj.int(pin);
            type = obj.int(type);
             reply = obj.sendMessageReliable([0,pin,type]);
@@ -38,7 +38,7 @@ classdef Arduino < handle
             end
         end
         
-        function writeDigitalPin(obj,pin,state)
+        function digitalWrite(obj,pin,state)
             pin = obj.int(pin);
             state = obj.int(state);
             reply = obj.sendMessageReliable([1,pin,state]);
@@ -46,7 +46,7 @@ classdef Arduino < handle
                 error(obj.multiError("Writing digital pin",obj.pinError(pin),obj.typeError(state,"digital pin state")),0)
             end
         end
-        function writeAnalogPin(obj,pin,state)
+        function analogWrite(obj,pin,state)
             pin = obj.int(pin);
             state = obj.int(state);
             if state>252
@@ -57,13 +57,21 @@ classdef Arduino < handle
                 error(obj.multiError("Writing analog pin",obj.pinError(pin)),0);
             end
         end
-        function out = readDigitalPin(obj,pin)
+        function out = digitalRead(obj,pin)
             pin = obj.int(pin);
-            reply = obj.sendMessageReliable([2,pin,state]);
+            reply = obj.sendMessageReliable([3,pin,state]);
             if reply == 253
                 error(obj.multiError("Reading digital pin",obj.pinError(pin)),0);
             end
             out = reply;
+        end
+        function out = analogRead(obj,pin)
+            pin = obj.int(pin);
+            reply = obj.sendMessageReliable([4,pin]);
+            if reply == 253
+                error(obj.multiError("Reading digital pin",obj.pinError(pin)),0);
+            end
+            out = obj.parseInt(reply);
         end
         
         
@@ -133,6 +141,15 @@ classdef Arduino < handle
                 obj.messageBuffer(index) = newByte;
             end
             out = obj.messageBuffer(1:index);
+        end
+        function out = parseInt(obj,msg)
+            sign = 1;
+            if (msg(1)) sign = -1; end
+            out = 0;
+            for i = 2:numel(msg)
+                out = out + msg(i)*2^(7*(i-2));
+            end
+            out = out*sign;
         end
         function out = getMessageAsText(obj)
             out = string(native2unicode(obj.getMessage()));

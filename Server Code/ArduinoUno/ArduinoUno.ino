@@ -174,7 +174,7 @@ bool putDigitalReadInMessage(uint8_t pin)
 bool putAnalogReadInMessage(uint8_t pin)
 {
   if(!validPin(pin)) return false;
-  putStringInReturnMessage(serialize(analogRead(pin)),0);
+  putStringInReturnMessage(serialize(int(analogRead(pin))),0);
   return true;
 }
 bool writeDigital(uint8_t pin, uint8_t state)

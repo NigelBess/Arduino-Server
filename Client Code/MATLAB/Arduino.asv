@@ -54,8 +54,16 @@ classdef Arduino < handle
             end
             reply = obj.sendMessageReliable([2,pin,state]);
             if reply == 253
-                error(obj.multiError("Writing analog pin",obj.pinError(pin),obj.typeError(state,"analog pin state")),0)
+                error(obj.multiError("Writing analog pin",obj.pinError(pin)),0);
             end
+        end
+        function out = readDigitalPin(obj,pin)
+            pin = obj.int(pin);
+            reply = obj.sendMessageReliable([2,pin,state]);
+            if reply == 253
+                error(obj.multiError("Reading digital pin",obj.pinError(pin)),0);
+            end
+            out = reply;
         end
         
         
@@ -126,6 +134,7 @@ classdef Arduino < handle
             end
             out = obj.messageBuffer(1:index);
         end
+        function out = parseI
         function out = getMessageAsText(obj)
             out = string(native2unicode(obj.getMessage()));
         end

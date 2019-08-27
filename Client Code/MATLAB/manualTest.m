@@ -1,5 +1,5 @@
-closeAll;
-arduino = Arduino('COM5');
+clearAll;
+arduino = Arduino('COM4');
 arduino.connect();
 while true
     msg = input('Message to send arduino: ');
