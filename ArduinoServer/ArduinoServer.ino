@@ -315,7 +315,8 @@ bool attachEncoder(uint8_t pin,uint8_t secondaryPin)
   int8_t interruptPin = digitalPinToInterrupt(pin);
   if (interruptPin<0) return false;// not a valid interrupt pin
   if(!setupPin(pin,INPUT)) return false;//try to set up the interrupt pin as input. if fails return false
-  bool quadratureEncoder = validPin(secondaryPin);
+  
+  bool quadratureEncoder = validPin(secondaryPin);//is it a quadrature encoder? (did the user specify a valid secondary pin)
   if(quadratureEncoder && !setupPin(secondaryPin,INPUT)) return false;
 
   
