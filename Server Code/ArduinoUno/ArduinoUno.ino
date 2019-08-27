@@ -214,7 +214,7 @@ bool validPin(uint8_t pin)
 }
 bool setupPin(uint8_t pin, uint8_t type)
 {
-  if (!validPin) return false;
+  if (!validPin(pin)) return false;
   if (!pinAvailable(pin)) return false;
   if (type>maxPinType) return false;
   pinMode(pin,type);

@@ -3,7 +3,7 @@ classdef Arduino < handle
         baudRate = 250000;
         terminator = 254;
         messageBufferSize = 512;
-        connectionTimeOut = 5;
+        connectionTimeOut = 2;
         serialTimeOut = 0.1;
     end
     properties(Access = private)
@@ -34,9 +34,19 @@ classdef Arduino < handle
            type = obj.int(type);
             reply = obj.sendMessageReliable([0,pin,type]);
             if reply == 253
-               error("Pin setup failed. Possible causes:\n Pin "+ string(pin)+ ...
-                   " is not valid or is in use.\n  OR \n " + string(type) ...
+               error("Pin setup failed. Possible causes:\n "+ obj.pinError(pin)+ ...
+                   "\n OR \n " + string(type) ...
                    + " does not name a valid pin type.",0);
+            end
+        end
+        function out = pinError(obj,pin)
+            out = "Pin " + string(pin) + " is not valid or is in use by a servo or encoder.";
+        end
+        function writeDigitalPin(obj,pin,state)
+            pin = obj.int(pin);
+            state = obj.int(state);
+            reply = obj.sendMessageReliable([1,pin,type]);
+            if reply == 253
             end
         end
         
@@ -141,6 +151,10 @@ classdef Arduino < handle
             d("INPUT") = 0;
             d("OUTPUT") = 1;
             d("INPUT_PULLUP") = 2;    
+            
+            %digital output states
+            d("HIGH") = 1;
+            d("LOW") = 0;
             
             obj.dictionary = d;
         end
