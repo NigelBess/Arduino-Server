@@ -34,19 +34,16 @@ classdef Arduino < handle
            type = obj.int(type);
             reply = obj.sendMessageReliable([0,pin,type]);
             if reply == 253
-               error("Pin setup failed. Possible causes:\n "+ obj.pinError(pin)+ ...
-                   "\n OR \n " + string(type) ...
-                   + " does not name a valid pin type.",0);
+                error(obj.multiError("Pin setup", obj.pinError(pin), obj.typeError(type,"pin type")),0);
             end
         end
-        function out = pinError(obj,pin)
-            out = "Pin " + string(pin) + " is not valid or is in use by a servo or encoder.";
-        end
+        
         function writeDigitalPin(obj,pin,state)
             pin = obj.int(pin);
             state = obj.int(state);
-            reply = obj.sendMessageReliable([1,pin,type]);
+            reply = obj.sendMessageReliable([1,pin,state]);
             if reply == 253
+                error(obj.multiError("Writing digital pin",obj.pinError(pin),obj.typeError(state,"digital pin state")),0)
             end
         end
         
@@ -167,6 +164,21 @@ classdef Arduino < handle
                 end
             end
             in = floor(in);
+        end
+        function str = multiError(obj,attemptStr,varargin)
+            str = attemptStr + " failed. Possible causes:\n";
+            for i = 1:numel(varargin)
+                str = str +"\n "+  varargin{i};
+                if i<numel(varargin)
+                    str = str + "\n OR";
+                end
+            end
+        end
+        function out = pinError(obj,pin)
+            out = "Pin " + string(pin) + " is not valid or is in use by a servo or encoder.";
+        end
+        function out = typeError(obj,value,type)
+            out = string(value) + " does not name a valid " + type +".";
         end
     end
 end

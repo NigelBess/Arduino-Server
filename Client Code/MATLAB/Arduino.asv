@@ -16,6 +16,7 @@ classdef Arduino < handle
     methods(Access = public)
         function obj = Arduino(port)
             obj.portName = port;
+            obj.clearPort();
             obj.messageBuffer = zeros(1,obj.messageBufferSize);
             obj.setupDictionary;
         end
@@ -28,20 +29,33 @@ classdef Arduino < handle
             obj.waitForConnection();
             disp("Connected to " + obj.getDeviceInfo());  
         end
-        function setupPin(pin,type)
-           pin = sanitize(pin);
-           type = sanitize(type);
-            reply = sendMessageReliable(0,pin,type);
+        function setupPin(obj,pin,type)
+           pin = obj.int(pin);
+           type = obj.int(type);
+            reply = obj.sendMessageReliable([0,pin,type]);
             if reply == 253
-               error("Pin setup failed. Possible causes:\n Pin "+ string(pin)+ ...
-                   " is not valid or is in use.\n  OR \n " + string(type) ...
-                   + " does not name a valid pin type.");
+               error("Pin setup failed. Possible causes:\n "+ obj.pinError(pin)+ ...
+                   "\n OR \n " + string(type) ...
+                   + " does not name a valid pin type.",0);
             end
         end
-        function 
+        function out = pinError(obj,pin)
+            out = "Pin " + string(pin) + " is not valid or is in use by a servo or encoder.";
+        end
+        function writeDigitalPin(obj,pin,state)
+            pin = obj.int(pin);
+            state = obj.int(state);
+            reply = obj.sendMessageReliable([1,pin,state]);
+            if reply == 253
+                error("Writing to digital pin failed")
+            end
+        end
+        
         
         function waitForConnection(obj)  
-            connected = obj.checkConnection(true);
+            for i = 1:2
+                connected = obj.checkConnection(true);
+            end
             while ~connected
                	connected = obj.checkConnection();
             end
@@ -93,7 +107,6 @@ classdef Arduino < handle
                 index = index+1;   
                 while (~obj.comPort.BytesAvailable)
                     if((obj.getTime()-startTime)>timeOutTime)
-                        obj.clearPort();
                         error('Arduino has timed out or disconnected.');
                     end
                 end
@@ -140,9 +153,13 @@ classdef Arduino < handle
             d("OUTPUT") = 1;
             d("INPUT_PULLUP") = 2;    
             
+            %digital output states
+            d("HIGH") = 1;
+            d("LOW") = 0;
+            
             obj.dictionary = d;
         end
-        function in = int(in)
+        function in = int(obj,in)
             if ~isnumeric(in)
                 try
                 in = obj.dictionary(in);
