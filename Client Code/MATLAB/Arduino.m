@@ -30,8 +30,8 @@ classdef Arduino < handle
             disp("Connected to " + obj.getDeviceInfo());  
         end
         function pinMode(obj,pin,type)
-           pin = obj.int(pin);
-           type = obj.int(type);
+           pin = obj.int8(pin);
+           type = obj.int8(type);
             reply = obj.sendMessageReliable([0,pin,type]);
             if reply == 253
                 error(obj.multiError("Pin setup", obj.pinError(pin), obj.typeError(type,"pin type")),0);
@@ -39,26 +39,23 @@ classdef Arduino < handle
         end
         
         function digitalWrite(obj,pin,state)
-            pin = obj.int(pin);
-            state = obj.int(state);
+            pin = obj.int8(pin);
+            state = obj.int8(state);
             reply = obj.sendMessageReliable([1,pin,state]);
             if reply == 253
                 error(obj.multiError("Writing digital pin",obj.pinError(pin),obj.typeError(state,"digital pin state")),0)
             end
         end
         function analogWrite(obj,pin,state)
-            pin = obj.int(pin);
-            state = obj.int(state);
-            if state>252
-                error("Analog write values must be between 0 and 252.");
-            end
+            pin = obj.int8(pin);
+            state = obj.int8(state);
             reply = obj.sendMessageReliable([2,pin,state]);
             if reply == 253
-                error(obj.multiError("Writing analog pin",obj.pinError(pin)),0);
+                error(obj.multiError("Writing analog pin",obj.pinError(pin),obj.typeError(state,"value between 0 and 252")),0);
             end
         end
         function out = digitalRead(obj,pin)
-            pin = obj.int(pin);
+            pin = obj.int8(pin);
             reply = obj.sendMessageReliable([3,pin,state]);
             if reply == 253
                 error(obj.multiError("Reading digital pin",obj.pinError(pin)),0);
@@ -66,12 +63,34 @@ classdef Arduino < handle
             out = reply;
         end
         function out = analogRead(obj,pin)
-            pin = obj.int(pin);
+            pin = obj.int8(pin);
             reply = obj.sendMessageReliable([4,pin]);
             if reply == 253
                 error(obj.multiError("Reading digital pin",obj.pinError(pin)),0);
             end
             out = obj.parseInt(reply);
+        end
+        function attachServo(obj,pin)
+            pin = obj.int8(pin);
+            reply = obj.sendMessageReliable([5,pin]);
+            if reply == 253
+                error(obj.multiError("Attaching servo",obj.pinError(pin)),0);
+            end
+        end
+        function writeServo(obj,pin,angle)
+            pin = obj.int8(pin);
+            angle = obj.int8(angle);
+            reply = obj.sendMessageReliable([6,pin,angle]);
+            if reply == 253
+                error(obj.multiError("Writing position to servo",obj.pinError(pin),obj.typeError(angle,"angle between 0 and 180 degrees")),0);
+            end
+        end
+        function detachServo(obj,pin)
+            pin = obj.int8(pin);
+            reply = obj.sendMessageReliable([7,pin]);
+            if reply == 253
+                error(obj.multiError("Dettaching servo",obj.pinError(pin)),0);
+            end
         end
         
         
@@ -191,7 +210,7 @@ classdef Arduino < handle
             
             obj.dictionary = d;
         end
-        function in = int(obj,in)
+        function in = int8(obj,in)
             if ~isnumeric(in)
                 try
                 in = obj.dictionary(in);
@@ -200,6 +219,10 @@ classdef Arduino < handle
                 end
             end
             in = floor(in);
+            if in<0
+                error("Input should be positive");
+            end
+            in = min(in,255);
         end
         function str = multiError(obj,attemptStr,varargin)
             str = attemptStr + " failed. Possible causes:\n";
@@ -214,7 +237,7 @@ classdef Arduino < handle
             out = "Pin " + string(pin) + " is not valid or is in use by a servo or encoder.";
         end
         function out = typeError(obj,value,type)
-            out = string(value) + " does not name a valid " + type +".";
+            out = string(value) + " is not a valid " + type +".";
         end
     end
 end
