@@ -1,3 +1,3 @@
-closePorts;
+instrreset;
 clear all;
 clc;

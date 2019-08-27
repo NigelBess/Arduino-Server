@@ -1,3 +1,0 @@
-instrreset;
-clear all;
-clc;
