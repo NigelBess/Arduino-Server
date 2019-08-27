@@ -355,8 +355,12 @@ bool resetEncoder(uint8_t pin)
 }
 bool detachEncoder(uint8_t pin)
 {
-  //stub
-  return false;
+  if(!validEncoder(pin)) return false;
+  uint8_t index = getEncoderIndexByPin(pin);
+  detachInterrupt(index);//index (0 or 1) matches interruptPin
+  delete encoders[index];//deallocate memory for encoder object
+  encoders[index] = NULL;//dereference 
+  return true;
 }
 void putStringInReturnMessage(String str, uint8_t index)
 {
