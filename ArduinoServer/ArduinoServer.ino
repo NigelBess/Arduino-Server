@@ -4,6 +4,10 @@
 
 const uint8_t maxMessageLength = 8;//max number of bytes in an incoming message
 
+const uint8_t numBitsPerByte = 7;//useable bits per byte for sending large numbers over multiple bytes
+//obviously each byte is 8 bits, but we cant use values of 255 or 254 because those are used for a null message and the terminator
+  //so we have to use one less bit per byte when transferring large numbers over multiple bytes
+
 const byte nullByte = 255;//byte representing a lack of available Serial input
 const byte terminator = 254;//byte representing end of message
 const byte errorByte = 253;//used in the return message to signify an error
@@ -131,6 +135,12 @@ void parse(byte* message)
     case 7://detachServo(pinNumber)
       detachServo(message[1]) ? success() : error();
       return;
+    case 8://addEncoder(interruptPin,optionalSecondaryPin)
+      attachEncoder(message[1],message[2]) ? success() : error();
+      return;
+    case 9: //getEncoderCount(interruptPin)
+      putEncoderCountInMessage(message[1]) ? reply() : error();
+      return;
     case 253://checkConnection
       message[1]==0 ? sendDeviceInfo() : success();
       return;
@@ -244,6 +254,10 @@ uint8_t getServoIndexByPin(uint8_t pin)
 {
   return getPinObjectByPin(pin,(PinObject**)servos,maxServos);
 }
+uint8_t getEncoderIndexByPin(uint8_t pin)
+{
+  return getPinObjectByPin(pin,(PinObject**)encoders,numInterruptPins);
+}
 bool servoAvailable(uint8_t pin)
 {
  return pinAvailableInObjectArray(pin,(PinObject**)servos,maxServos);
@@ -289,8 +303,62 @@ bool detachServo(uint8_t pin)
    }
   return true; 
 }
+bool attachEncoder(uint8_t pin,uint8_t secondaryPin)
+{
+  int8_t interruptPin = digitalPinToInterrupt(pin);
+  if (interruptPin<0) return false;// not a valid interrupt pin
+  if(!setupPin(pin,INPUT)) return false;//try to set up the interrupt pin as input. if fails return false
+  bool quadratureEncoder = validPin(secondaryPin);
+  if(quadratureEncoder && !setupPin(secondaryPin,INPUT)) return false;
 
-
+  
+  uint8_t index = getAvailableSlot((void**)encoders,numInterruptPins);
+  encoders[index] = new Encoder(pin);
+  if(quadratureEncoder) (*encoders[index]).setSecondaryPin(secondaryPin);
+  switch (index)
+  {
+    case 0:
+      attachInterrupt(interruptPin,encoder0Interrupt,FALLING);
+      break;
+    case 1:
+      attachInterrupt(interruptPin,encoder1Interrupt,FALLING);
+      break;
+  }
+  return true;
+}
+bool putEncoderCountInMessage(uint8_t pin)
+{
+  if(!validPin(pin)) return false;
+  if(encoderAvailable(pin)) return false;
+  uint8_t index = getEncoderIndexByPin(pin);
+  int count = (*encoders[index]).getCount();
+  putStringInReturnMessage(serialize(count),0);
+  return true; 
+}
+void putStringInReturnMessage(String str, uint8_t index)
+{
+  for (int i = 0; i<str.length(); i++)
+  {
+    returnMessage[index+i] = str[i];
+  }
+}
+String serialize(int input)
+{
+  //obviously each byte is 8 bits, but we cant use 255 or 254 because those are used for a null message and the terminator
+  //so we have to use one less bit per byte when transferring large numbers over multiple bytes
+  uint8_t totalBits = sizeof(input)*8;
+  uint8_t bytesNeeded = totalBits/numBitsPerByte + int((totalBits%numBitsPerByte)>0);
+  String out;
+  int remainder = 1<<numBitsPerByte;
+  for (int i = 0; i<bytesNeeded;i++)
+  {
+    uint8_t shift = numBitsPerByte*(i+1);
+    remainder = input%(1<<shift);
+    out += char(remainder>>(shift-numBitsPerByte));//little endian
+    input -= remainder;
+  }
+  return out;
+}
 void encoder0Interrupt()
 {
   if(encoders[0] == NULL) return;
@@ -299,6 +367,10 @@ void encoder0Interrupt()
 
 void encoder1Interrupt()
 {
-  if(encoders[0] == NULL) return;
-  (*encoders[0]).interrupt();
+  if(encoders[1] == NULL) return;
+  (*encoders[1]).interrupt();
+}
+void debug(int in)
+{
+  Serial.print(char(in));
 }

@@ -16,9 +16,8 @@ class Encoder : public PinObject
   {
     pin = pinNum;
   }
-  void setSecondaryPin()
+  void setSecondaryPin(uint8_t pinNum)
   {
-    uint8_t pinNum;
     secondaryPin = pinNum;
   }
   void setDirection(int8_t dir)
