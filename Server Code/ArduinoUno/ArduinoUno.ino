@@ -18,6 +18,7 @@ const byte maxAnalogValue = 252;//corresponds to 255 in arduino's analog read/wr
 const uint8_t startDelay = 100;//ms
 const uint8_t serialTimeOutTime = 50;//ms
 byte* returnMessage = new byte[maxMessageLength];
+byte* message = new byte[maxMessageLength];
 
 const uint8_t maxPinNum = 19;
 const uint8_t maxPinType = 2;
@@ -42,7 +43,8 @@ void loop()
 {
   if(Serial.available()>0)
   {
-    parse(getIncomingMessage());
+    getIncomingMessage();
+    parse();
   } 
 }
 void sendMessage(String msg)
@@ -51,15 +53,15 @@ void sendMessage(String msg)
   Serial.print(msg+String(char(terminator)));
 }
 
-byte* getIncomingMessage()
+void getIncomingMessage()
 {
-  //returns incoming message as a byte array.
-  //values after terminator will be zero
-  //for example assume an incoming message is 2 bytes: {6 , 7}
-  //and in this example maxMessageLength is 5
-  //this function returns: {6, 7, [terminator], 0, 0}
+  
+
+  for (int i = 0;i<maxMessageLength;i++)
+  {
+    message[i] = terminator;
+  }
   uint8_t index = 0;
-  byte* out = new byte[maxMessageLength];
   while(index<maxMessageLength)
   {
     byte currentByte;
@@ -69,16 +71,15 @@ byte* getIncomingMessage()
       currentByte = Serial.read();
     }
     while((currentByte == 255)&&((millis()-startMessageTime))<serialTimeOutTime);
-    if (currentByte == 255) return out;
-    out[index] = currentByte;
+    if (currentByte == 255) return;
+    message[index] = currentByte;
     index++;
-    if(currentByte==terminator) return out;
+    if(currentByte==terminator) return;
   }
-  return out;
 }
 
 
-void parse(byte* message)
+void parse()
 {
   resetReturnMessage();
   byte function = message[0];
@@ -305,7 +306,10 @@ bool attachEncoder(uint8_t pin,uint8_t secondaryPin)
   if(!setupPin(pin,INPUT)) return false;//try to set up the interrupt pin as input. if fails return false
   
   bool quadratureEncoder = validPin(secondaryPin);//is it a quadrature encoder? (did the user specify a valid secondary pin)
-  if(quadratureEncoder && !setupPin(secondaryPin,INPUT)) return false;
+  if(quadratureEncoder)
+  {
+    if(!setupPin(secondaryPin,INPUT)) return false;
+  }
 
   
   uint8_t index = getAvailableSlot((void**)encoders,numInterruptPins);
