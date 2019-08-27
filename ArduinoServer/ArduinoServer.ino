@@ -350,6 +350,8 @@ String serialize(int input)
   uint8_t bytesNeeded = totalBits/numBitsPerByte + int((totalBits%numBitsPerByte)>0);
   String out;
   int remainder = 1<<numBitsPerByte;
+  input<0 ? out+= char(1) : out+=char(0);
+  input = abs(input);
   for (int i = 0; i<bytesNeeded;i++)
   {
     uint8_t shift = numBitsPerByte*(i+1);
