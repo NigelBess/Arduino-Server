@@ -46,6 +46,25 @@ classdef Arduino < handle
                 error(obj.multiError("Writing digital pin",obj.pinError(pin),obj.typeError(state,"digital pin state")),0)
             end
         end
+        function writeAnalogPin(obj,pin,state)
+            pin = obj.int(pin);
+            state = obj.int(state);
+            if state>252
+                error("Analog write values must be between 0 and 252.");
+            end
+            reply = obj.sendMessageReliable([2,pin,state]);
+            if reply == 253
+                error(obj.multiError("Writing analog pin",obj.pinError(pin)),0);
+            end
+        end
+        function out = readDigitalPin(obj,pin)
+            pin = obj.int(pin);
+            reply = obj.sendMessageReliable([2,pin,state]);
+            if reply == 253
+                error(obj.multiError("Reading digital pin",obj.pinError(pin)),0);
+            end
+            out = reply;
+        end
         
         
         function waitForConnection(obj)  
