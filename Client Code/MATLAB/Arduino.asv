@@ -3,7 +3,7 @@ classdef Arduino < handle
         baudRate = 250000;
         terminator = 254;
         messageBufferSize = 512;
-        connectionTimeOut = 5;
+        connectionTimeOut = 2;
         serialTimeOut = 0.1;
     end
     properties(Access = private)
@@ -16,7 +16,6 @@ classdef Arduino < handle
     methods(Access = public)
         function obj = Arduino(port)
             obj.portName = port;
-            obj.clearPort();
             obj.messageBuffer = zeros(1,obj.messageBufferSize);
             obj.setupDictionary;
         end
@@ -29,22 +28,20 @@ classdef Arduino < handle
             obj.waitForConnection();
             disp("Connected to " + obj.getDeviceInfo());  
         end
-        function setupPin(obj,pin,type)
-           pin = obj.int(pin);
-           type = obj.int(type);
-            reply = obj.sendMessageReliable([0,pin,type]);
+        function setupPin(pin,type)
+           pin = sanitize(pin);
+           type = sanitize(type);
+            reply = sendMessageReliable(0,pin,type);
             if reply == 253
                error("Pin setup failed. Possible causes:\n Pin "+ string(pin)+ ...
                    " is not valid or is in use.\n  OR \n " + string(type) ...
-                   + " does not name a valid pin type.",0);
+                   + " does not name a valid pin type.");
             end
         end
-        
+        function 
         
         function waitForConnection(obj)  
-            for i = 1:2
-                connected = obj.checkConnection(true);
-            end
+            connected = obj.checkConnection(true);
             while ~connected
                	connected = obj.checkConnection();
             end
@@ -96,6 +93,7 @@ classdef Arduino < handle
                 index = index+1;   
                 while (~obj.comPort.BytesAvailable)
                     if((obj.getTime()-startTime)>timeOutTime)
+                        obj.clearPort();
                         error('Arduino has timed out or disconnected.');
                     end
                 end
@@ -144,7 +142,7 @@ classdef Arduino < handle
             
             obj.dictionary = d;
         end
-        function in = int(obj,in)
+        function in = int(in)
             if ~isnumeric(in)
                 try
                 in = obj.dictionary(in);
