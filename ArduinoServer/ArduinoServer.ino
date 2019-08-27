@@ -141,11 +141,18 @@ void parse(byte* message)
     case 9: //getEncoderCount(interruptPin)
       putEncoderCountInMessage(message[1]) ? reply() : error();
       return;
+    case 10://resetEncoder(interruptPin)
+      resetEncoder(message[1]) ? success() : error();
+      return;
+    case 11://detachEncoder(interruptPin)
+      detachEncoder(message[1]) ? success() : error();
+      return;
     case 253://checkConnection
       message[1]==0 ? sendDeviceInfo() : success();
       return;
   
   }
+  //if you made it this far, the function byte was invalid
   error();
 }
 void resetReturnMessage()
@@ -326,14 +333,29 @@ bool attachEncoder(uint8_t pin,uint8_t secondaryPin)
   }
   return true;
 }
+bool validEncoder(uint8_t pin)
+{
+  return validPin && !encoderAvailable(pin);
+}
 bool putEncoderCountInMessage(uint8_t pin)
 {
-  if(!validPin(pin)) return false;
-  if(encoderAvailable(pin)) return false;
+  if(!validEncoder(pin)) return false;
   uint8_t index = getEncoderIndexByPin(pin);
   int count = (*encoders[index]).getCount();
   putStringInReturnMessage(serialize(count),0);
   return true; 
+}
+bool resetEncoder(uint8_t pin)
+{
+  if(!validEncoder(pin)) return false;
+  uint8_t index = getEncoderIndexByPin(pin);
+  (*encoders[index]).reset();
+  return true;
+}
+bool detachEncoder(uint8_t pin)
+{
+  //stub
+  return false;
 }
 void putStringInReturnMessage(String str, uint8_t index)
 {
