@@ -76,20 +76,6 @@ byte* getIncomingMessage()
   }
   return out;
 }
-void repeat()
-{
-  byte* incoming = getIncomingMessage();
-  for(int i = 0; i < maxMessageLength;i++)
-  {
-    Serial.print(char((incoming[i])));
-    if(incoming[i] == terminator)
-    {
-      return;
-    }
-    
-  }
-  Serial.print(char(terminator));
-}
 
 
 void parse(byte* message)
@@ -102,29 +88,16 @@ void parse(byte* message)
       setupPin(message[1],message[2]) ? success() : error();
       return;
     case 1://digitalWrite(pinNumber,state)
-        writeDigital(message[1],message[2]) ? success() : error();
+       writeDigital(message[1],message[2]) ? success() : error();
       return;
     case 2://analogWrite(pinNumber,value)
       writeAnalog(message[1],(message[2])) ? success() : error();
       return;
     case 3://digitalRead(pinNumber)
-      if(!validPin(message[1]))
-      {
-        error();
-        return;
-      }
-      returnMessage[0] = digitalRead(message[1]);
-      reply();
+      putDigitalReadInMessage(message[1]) ? reply() : error();
       return;
     case 4://analogRead(pinNumber)
-      if(!validPin(message[1]))
-      {
-        error();
-      } else
-      {
-        returnMessage[0] = map(analogRead(message[1]),0,1023,0,maxAnalogValue);
-        reply();
-      }
+      putAnalogReadInMessage(message[1]) ? reply() : error();
       return;
     case 5://servo(pinNumber)
       addServo(message[1]) ? success() : error();
@@ -191,6 +164,18 @@ void reply()
       return;
     }
   }
+}
+bool putDigitalReadInMessage(uint8_t pin)
+{
+  if(!validPin(pin)) return false;
+  returnMessage[0] = digitalRead(pin);
+  return true;
+}
+bool putAnalogReadInMessage(uint8_t pin)
+{
+  if(!validPin(pin)) return false;
+  putStringInReturnMessage(serialize(analogRead(pin)),0);
+  return true;
 }
 bool writeDigital(uint8_t pin, uint8_t state)
 {
