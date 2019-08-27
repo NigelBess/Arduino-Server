@@ -147,6 +147,9 @@ void parse(byte* message)
     case 11://detachEncoder(interruptPin)
       detachEncoder(message[1]) ? success() : error();
       return;
+    case 12:
+       setEncoderDirection(message[1],message[2]) ? success() : error();
+       return;
     case 253://checkConnection
       message[1]==0 ? sendDeviceInfo() : success();
       return;
@@ -360,6 +363,17 @@ bool detachEncoder(uint8_t pin)
   detachInterrupt(index);//index (0 or 1) matches interruptPin
   delete encoders[index];//deallocate memory for encoder object
   encoders[index] = NULL;//dereference 
+  return true;
+}
+bool setEncoderDirection(uint8_t pin, uint8_t direction)
+{
+  if(!validEncoder(pin)) return false;
+  if(direction>2) return false;//direction can be 0 (no count), 1 (count positive) or (2 count negative)
+  //convert uint8 to int8 with 2 mapping to -1
+  int8_t intDir = int8_t(direction);
+  if (intDir == 2) intDir = -1;
+  uint8_t index = getEncoderIndexByPin(pin);
+  (*encoders[index]).setDirection(intDir);
   return true;
 }
 void putStringInReturnMessage(String str, uint8_t index)
