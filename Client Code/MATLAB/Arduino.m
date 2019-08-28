@@ -7,6 +7,7 @@ classdef Arduino < handle
         messageBufferSize = 512;
         connectionTimeOut = 2;
         serialTimeOut = 0.1;
+        maxAnalogRead = 5;%volts
     end
     properties(Access = private)
         comPort;
@@ -58,11 +59,11 @@ classdef Arduino < handle
         end
         function out = digitalRead(obj,pin)
             pin = obj.int8(pin);
-            reply = obj.sendMessageReliable([3,pin,state]);
+            reply = obj.sendMessageReliable([3,pin]);
             if reply == obj.errorByte
                 error(obj.multiError("Reading digital pin",obj.pinError(pin)),0);
             end
-            out = reply;
+            out = logical(reply);
         end
         function out = analogRead(obj,pin)
             pin = obj.int8(pin);
@@ -70,7 +71,7 @@ classdef Arduino < handle
             if reply == obj.errorByte
                 error(obj.multiError("Reading digital pin",obj.pinError(pin)),0);
             end
-            out = obj.parseInt(reply);
+            out = obj.parseInt(reply)*obj.maxAnalogRead/1023;
         end
         function attachServo(obj,pin)
             pin = obj.int8(pin);
@@ -258,6 +259,9 @@ classdef Arduino < handle
             obj.dictionary = d;
         end
         function in = int8(obj,in)
+            if islogical(in)
+                in = double(in);
+            end
             if ~isnumeric(in)
                 try
                 in = obj.dictionary(in);
