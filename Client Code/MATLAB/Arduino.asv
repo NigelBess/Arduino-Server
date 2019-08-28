@@ -90,19 +90,28 @@ classdef Arduino < handle
         function detachServo(obj,pin)
             pin = obj.int8(pin);
             reply = obj.sendMessageReliable([7,pin]);
-            if reply == 253
-                error(obj.multiError("Dettaching servo",obj.pinError(pin)),0);
+            if reply == obj.errorByte
+                error("No servo found at pin " + string(pin));
             end
         end
         function encoder(obj,interruptPin,secondaryPin)
             if nargin<3
-                secondaryPin = obj.terminator;
+                secondaryPin = obj.nullByte;
             end
+            interruptPin = obj.int8(interruptPin);
+            secondaryPin = obj.int8(secondaryPin);
+            reply = obj.sendMessageReliable([8,interruptPin,secondaryPin]);
+            if reply == obj.errorByte
+                error(obj.multiError("Setting up encoder",obj.pinError(interruptPin))+"\n OR\n Pin " + string(interruptPin) + " is not an interrupt pin on this Arduino.",0);
+            end
+        end
+        function out = analogRead(obj,pin)
             pin = obj.int8(pin);
-            reply = obj.sendMessageReliable([7,pin]);
-            if reply == 253
-                error(obj.multiError("Dettaching servo",obj.pinError(pin)),0);
+            reply = obj.sendMessageReliable([4,pin]);
+            if reply == obj.errorByte
+                error(obj.multiError("Reading digital pin",obj.pinError(pin)),0);
             end
+            out = obj.parseInt(reply);
         end
         
         
@@ -144,7 +153,11 @@ classdef Arduino < handle
             %values of 255 get ignored by the arduino so we will delete
             %those
             msg(msg==255) = [];
+            try
             flushoutput(obj.comPort);
+            catch
+                error("Arduino is not connected. Run Arduino.connect() to connect.");
+            end
             fwrite(obj.comPort,[msg,obj.terminator]);
         end
         function out = sendMessageReliable(obj,msg)

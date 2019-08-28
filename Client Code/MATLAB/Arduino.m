@@ -105,6 +105,36 @@ classdef Arduino < handle
                 error(obj.multiError("Setting up encoder",obj.pinError(interruptPin))+"\n OR\n Pin " + string(interruptPin) + " is not an interrupt pin on this Arduino.",0);
             end
         end
+        function out = getEncoderCount(obj,pin)
+            pin = obj.int8(pin);
+            reply = obj.sendMessageReliable([9,pin]);
+            if reply == obj.errorByte
+                error("No encoder found at pin " + string(pin));
+            end
+            out = obj.parseInt(reply);
+        end
+        function resetEncoder(obj,pin)
+            pin = obj.int8(pin);
+            reply = obj.sendMessageReliable([10,pin]);
+            if reply == obj.errorByte
+                error("No encoder found at pin " + string(pin));
+            end
+        end
+        function detachEncoder(obj,pin)
+            pin = obj.int8(pin);
+            reply = obj.sendMessageReliable([11,pin]);
+            if reply == obj.errorByte
+                error("No encoder found at pin " + string(pin));
+            end
+        end
+        function setEncoderDirection(obj,pin,direction)
+            pin = obj.int8(pin);
+            direction = obj.int8(direction);
+            reply = obj.sendMessageReliable([12,pin,direction]);
+            if reply == obj.errorByte
+                error("No encoder found at pin " + string(pin) + "\nOR\n" + string(direction)+" is invalid. Valid values are 0 (no count) 1 (positive count) and 2 (negative count).");
+            end
+        end
         
         
         function waitForConnection(obj)  
