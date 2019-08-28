@@ -156,7 +156,7 @@ void success()
 }
 void reply()
 {
-  Serial.flush();
+  //Serial.flush();
   for(int i =0;i<maxMessageLength;i++)
   {
     Serial.print(char(returnMessage[i]));

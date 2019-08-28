@@ -6,7 +6,7 @@ classdef Arduino < handle
         errorByte = 253;
         messageBufferSize = 512;
         connectionTimeOut = 2;
-        serialTimeOut = 0.1;
+        serialTimeOut = 1;
         maxAnalogRead = 5;%volts
     end
     properties(Access = private)
@@ -18,12 +18,12 @@ classdef Arduino < handle
     
     methods(Access = public)
         function obj = Arduino(port)
-            obj.portName = port;
-            obj.clearPort();
+            obj.portName = port; 
             obj.messageBuffer = zeros(1,obj.messageBufferSize);
             obj.setupDictionary;
         end
         function obj = connect(obj)
+            obj.clearPort();
             obj.comPort = serial(obj.portName);
             obj.comPort.BaudRate = obj.baudRate;
             fopen(obj.comPort);
@@ -109,6 +109,7 @@ classdef Arduino < handle
         function out = getEncoderCount(obj,pin)
             pin = obj.int8(pin);
             reply = obj.sendMessageReliable([9,pin]);
+            disp(reply);
             if reply == obj.errorByte
                 error("No encoder found at pin " + string(pin));
             end
@@ -139,8 +140,10 @@ classdef Arduino < handle
         
         
         function waitForConnection(obj)  
-            for i = 1:2
-                connected = obj.checkConnection(true);
+            numReads = 10;%successful messages sent before we determine that we are definitely connected
+            numSlowReads = 2;%first this many reads will be given some extra time
+            for i = 1:numReads
+                connected = obj.checkConnection(i<=numSlowReads);
             end
             while ~connected
                	connected = obj.checkConnection();
@@ -177,7 +180,7 @@ classdef Arduino < handle
             %those
             msg(msg==255) = [];
             try
-            flushoutput(obj.comPort);
+                flushoutput(obj.comPort);
             catch
                 error("Arduino is not connected. Run Arduino.connect() to connect.");
             end
@@ -188,6 +191,7 @@ classdef Arduino < handle
             out = obj.getMessage();
         end
         function out = getMessage(obj,timeOutTime)
+            obj.messageBuffer = zeros(1,numel(obj.messageBuffer));
             if nargin<2
                 timeOutTime = obj.serialTimeOut;
             end
@@ -202,8 +206,8 @@ classdef Arduino < handle
                 end
                 newByte = fread(obj.comPort,1);
                 if newByte == obj.terminator
-                    index = index-1;
-                    break;
+                    out = obj.messageBuffer(1:index-1);
+                    return;
                 end
                 obj.messageBuffer(index) = newByte;
             end
