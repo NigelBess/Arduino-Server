@@ -17,8 +17,7 @@ const byte maxAnalogValue = 252;//corresponds to 255 in arduino's analog read/wr
 
 const uint8_t startDelay = 100;//ms
 const uint8_t serialTimeOutTime = 50;//ms
-byte* returnMessage = new byte[maxMessageLength];
-byte* message = new byte[maxMessageLength];
+byte* message = new byte[maxMessageLength];//incoming message buffer
 
 const uint8_t maxPinNum = 19;
 const uint8_t maxPinType = 2;
@@ -43,20 +42,55 @@ void loop()
 {
   if(Serial.available()>0)
   {
-    getIncomingMessage();
-    parse();
+    parse(getIncomingMessage());
   } 
 }
 void sendMessage(String msg)
 {
-  Serial.flush();
   Serial.print(msg+String(char(terminator)));
 }
-
-void getIncomingMessage()
+void sendMessage(byte msg)
 {
-  
+  sendMessage(String(char(msg)));
+}
+void error(String msg)
+{
+  Serial.print(char(errorByte));
+  sendMessage(msg);
+}
+void invalidPinError(uint8_t pin)
+{
+  error("Pin " + String(pin) + " is invalid. Valid pins are 0-19.");
+}
+void unavailablePinError(uint8_t pin)
+{
+  error("Pin" + String(pin) + " is already in use by an encoder or servo.");
+}
+void findServoError(uint8_t pin)
+{
+  findError("servo",pin);
+}
+void findEncoderError(uint8_t pin)
+{
+  findError("encoder interrupt pin",pin);
+}
+void findError(String type, uint8_t pin)
+{
+  error("No "+ type+ " found at pin "+ String(pin));
+}
+void runtimeError()
+{
+  error(F("The Arduino has encountered a runtime error (this isn't supposed to happen). If you are reading this message, there is a bug in the Arduino server code. Probably a buffer error or stack overflow."));
+}
+void success()
+{
+  sendMessage(byte(0));
+}
 
+
+
+byte* getIncomingMessage()
+{
   for (int i = 0;i<maxMessageLength;i++)
   {
     message[i] = terminator;
@@ -71,149 +105,320 @@ void getIncomingMessage()
       currentByte = Serial.read();
     }
     while((currentByte == 255)&&((millis()-startMessageTime))<serialTimeOutTime);
-    if (currentByte == 255) return;
+    if (currentByte == 255) return message;
     message[index] = currentByte;
     index++;
-    if(currentByte==terminator) return;
+    if(currentByte==terminator) return message;
   }
+  return message;
 }
 
 
-void parse()
+
+void parse(byte* message)
 {
-  resetReturnMessage();
   byte function = message[0];
   switch(function)
   {
     case 0://pinMode(pinNumber,pinType)
-      setupPin(message[1],message[2]) ? success() : error();
+      Try(setupPin(message[1],message[2]));
       return;
     case 1://digitalWrite(pinNumber,state)
-       writeDigital(message[1],message[2]) ? success() : error();
+       Try(writeDigital(message[1],message[2]));
       return;
     case 2://analogWrite(pinNumber,value)
-      writeAnalog(message[1],(message[2])) ? success() : error();
+      Try(writeAnalog(message[1],(message[2])));
       return;
     case 3://digitalRead(pinNumber)
-      putDigitalReadInMessage(message[1]) ? reply() : error();
+      Try(readDigital(message[1]));
       return;
     case 4://analogRead(pinNumber)
-      putAnalogReadInMessage(message[1]) ? reply() : error();
+      Try(readAnalog(message[1]));
       return;
     case 5://servo(pinNumber)
-      addServo(message[1]) ? success() : error();
+      Try(addServo(message[1]));
       return;
     case 6://writeServo(pinNumber,value)
-      writeServo(message[1],message[2]) ? success() : error();
+      Try(writeServo(message[1],message[2]));
       return;
     case 7://detachServo(pinNumber)
-      detachServo(message[1]) ? success() : error();
+      Try(detachServo(message[1]));
       return;
     case 8://addEncoder(interruptPin,optionalSecondaryPin)
-      attachEncoder(message[1],message[2]) ? success() : error();
+      Try(attachEncoder(message[1],message[2]));
       return;
     case 9: //getEncoderCount(interruptPin)
-      putEncoderCountInMessage(message[1]) ? reply() : error();
+      Try(readEncoder(message[1]));
       return;
     case 10://resetEncoder(interruptPin)
-      resetEncoder(message[1]) ? success() : error();
+      Try(resetEncoder(message[1]));
       return;
     case 11://detachEncoder(interruptPin)
-      detachEncoder(message[1]) ? success() : error();
+      Try(detachEncoder(message[1]));
       return;
     case 12:
-       setEncoderDirection(message[1],message[2]) ? success() : error();
+       Try(setEncoderDirection(message[1],message[2]));
        return;
     case 253://checkConnection
       message[1]==0 ? sendDeviceInfo() : success();
       return;
-  
   }
   //if you made it this far, the function byte was invalid
-  error();
+  error("Invalid function parameter.");
 }
-void resetReturnMessage()
+void Try(bool functionOutput)
 {
-  //sets the return message to the error message
-  returnMessage[0] = errorByte;
-  for(int i =1;i<maxMessageLength;i++)
+  if (!functionOutput) runtimeError();
+  //all paths of every function should return true. If the function returns false it encoutered an error.
+}
+
+bool setupPin(uint8_t pin, uint8_t type)
+{
+  if (!validPin(pin))
   {
-    returnMessage[i] = terminator;
+    invalidPinError(pin);
+    return true;
   }
-}
-void error()
-{
-  //sets return message to error message and sends to serial com
-  resetReturnMessage();
-  reply();
-}
-void success()
-{
-  //sets return message to success message and sends to serial com
-  resetReturnMessage();
-  returnMessage[0] = successByte;
-  reply();
-}
-void reply()
-{
-  //Serial.flush();
-  for(int i =0;i<maxMessageLength;i++)
+  if (!pinAvailable(pin)) 
   {
-    Serial.print(char(returnMessage[i]));
-    if (returnMessage[i]==terminator)
-    {
-      return;
-    }
+    unavailablePinError(pin);
+    return true;
   }
-}
-bool putDigitalReadInMessage(uint8_t pin)
-{
-  if(!validPin(pin)) return false;
-  returnMessage[0] = digitalRead(pin);
+  if (type>maxPinType)
+  {
+    error(String(type) + " does not name a valid pin type. Valid types are 0, 1 or 2");
+    return true;
+  }
+  pinMode(pin,type);
+  success();
   return true;
 }
-bool putAnalogReadInMessage(uint8_t pin)
-{
-  if(!validPin(pin)) return false;
-  putStringInReturnMessage(serialize(int(analogRead(pin))),0);
-  return true;
-}
+
 bool writeDigital(uint8_t pin, uint8_t state)
 {
-  if (!validPin(pin)) return false;
-  if(!pinAvailable(pin)) return false;
-  if (state>maxDigitalState) return false;
+  if (!validPin(pin))
+  {
+    invalidPinError(pin);
+    return true;
+  }
+  if (!pinAvailable(pin)) 
+  {
+    unavailablePinError(pin);
+    return true;
+  }
+  
+  if (state>maxDigitalState) 
+  {
+    error(String(state) + " is not a valid pin state. valid states are 0 (LOW) or 1(HIGH)");
+    return true;
+  }
   digitalWrite(pin,state);
+  success();
   return true;
 }
 bool writeAnalog(uint8_t pin, uint8_t value)
 {
-  if (!validPin(pin)) return false;
-  if(!pinAvailable(pin)) return false;
-  if(value>maxAnalogValue) return false;
+  if (!validPin(pin)) 
+  {
+    invalidPinError(pin);
+    return true;
+  }
+  if(!pinAvailable(pin))
+  {
+    unavailablePinError(pin);
+    return true;
+  }
+  if(value>maxAnalogValue) 
+  {
+    error(String(value)+ " is outside the acceptable range of 0-"+String(maxAnalogValue));
+  }
   analogWrite(pin,analogValue(value));
-  return true;
-}
-bool validPin(uint8_t pin)
-{
-  return pin<maxPinNum;
-}
-bool setupPin(uint8_t pin, uint8_t type)
-{
-  if (!validPin(pin)) return false;
-  if (!pinAvailable(pin)) return false;
-  if (type>maxPinType) return false;
-  pinMode(pin,type);
+  success();
   return true;
 }
 uint8_t analogValue(uint8_t input)
 {
   return map(input,0,maxAnalogValue,0,255);
 }
-void sendDeviceInfo()
+
+
+bool readDigital(uint8_t pin)
 {
-  sendMessage(F("Arduino Uno running server code by Nigel Bess: https://github.com/NigelBess/Arduino-Server"));
+  if(!validPin(pin)) 
+  {
+    invalidPinError(pin);
+    return true;
+  }
+  sendMessage(byte(digitalRead(pin)));
+  return true;
 }
+bool readAnalog(uint8_t pin)
+{
+  if(!validPin(pin)) 
+  {
+    invalidPinError(pin);
+    return true;
+  }
+  sendMessage(serialize(int(analogRead(pin))));
+  return true;
+}
+
+
+
+bool addServo(uint8_t pin)
+{
+  if(!validPin(pin)) 
+  {
+    invalidPinError(pin);
+    return true;
+  }
+  if(!pinAvailable(pin))
+  {
+    unavailablePinError(pin);
+    success();
+    return true;
+  }
+  uint8_t index = getAvailableSlot((void**)servos,maxServos);
+  servos[index] = new ServoObject(pin);
+  return true;
+}
+bool writeServo(uint8_t pin, uint8_t value)
+{
+  if(!validPin(pin)) 
+  {
+    invalidPinError(pin);
+    return true;
+  }
+  if(value > 180)
+  {
+    error(String(value) + " degrees outside of range 0-180");
+    return true;
+  }
+  if(servoAvailable(pin))
+  {
+    findServoError(pin);
+    return true;
+  }
+  uint8_t index = getServoIndexByPin(pin);
+  (*servos[index]).write(value);
+  success();
+  return true;
+}
+bool detachServo(uint8_t pin)
+{
+  if(!validPin(pin)) 
+  {
+    invalidPinError(pin);
+    return true;
+  }
+  if(servoAvailable(pin))
+  {
+    findServoError(pin);
+    return true;
+  }
+  uint8_t index = getServoIndexByPin(pin);
+  while(index != 255)
+  {
+    (*servos[index]).detach();//make arduino stop using the pin for servo communication
+    delete servos[index];//deallocate memory where the servo object was stored
+    servos[index] = NULL;//dereference the memory
+    index = getServoIndexByPin(pin);//check if there is another servo that uses this pin
+ }
+ success();
+  return true; 
+}
+bool attachEncoder(uint8_t pin,uint8_t secondaryPin)
+{
+  int8_t interruptPin = digitalPinToInterrupt(pin);
+  if (interruptPin<0)// not a valid interrupt pin
+  {
+    error("Pin " + String(pin) + " is not an interrupt pin on this Arduino.");
+  }
+  if(!validPin(pin)) 
+  {
+    invalidPinError(pin);
+    return true;
+  }
+  if(!pinAvailable(pin))
+  {
+    unavailablePinError(pin);
+    return true;
+  }
+  pinMode(pin,INPUT);
+  
+  bool quadratureEncoder = validPin(secondaryPin);//is it a quadrature encoder? (did the user specify a valid secondary pin)
+  if(quadratureEncoder)
+  {
+    if(!pinAvailable(secondaryPin)) 
+    {
+      unavailablePinError(secondaryPin);
+      return true;
+    }
+    pinMode(secondaryPin,INPUT);
+  }
+
+  uint8_t index = getAvailableSlot((void**)encoders,numInterruptPins);
+  encoders[index] = new Encoder(pin);
+  if(quadratureEncoder) (*encoders[index]).setSecondaryPin(secondaryPin);
+  switch (index)
+  {
+    case 0:
+      attachInterrupt(interruptPin,encoder0Interrupt,FALLING);
+      break;
+    case 1:
+      attachInterrupt(interruptPin,encoder1Interrupt,FALLING);
+      break;
+  }
+  success();
+  return true;
+}
+bool readEncoder(uint8_t pin)
+{
+  if(!validEncoder(pin))
+  {
+    findEncoderError(pin);
+    return true;
+  }
+  uint8_t index = getEncoderIndexByPin(pin);
+  int count = (*encoders[index]).getCount();
+  sendMessage(serialize(count));
+  return true; 
+}
+bool detachEncoder(uint8_t pin)
+{
+  if(!validEncoder(pin))
+  {
+    findEncoderError(pin);
+    return true;
+  }
+  uint8_t index = getEncoderIndexByPin(pin);
+  detachInterrupt(index);//index (0 or 1) matches interruptPin
+  delete encoders[index];//deallocate memory for encoder object
+  encoders[index] = NULL;//dereference 
+  success();
+  return true;
+}
+bool setEncoderDirection(uint8_t pin, uint8_t direction)
+{
+  if(!validEncoder(pin))
+  {
+    findEncoderError(pin);
+    return true;
+  }
+  if(direction>2)//direction can be 0 (no count), 1 (count positive) or (2 count negative)
+  {
+    error(String(direction) + " is not a valid encoder direction. Valid directions: 0 (no count), 1 (count positive) or (2 count negative)");
+  }
+  //convert uint8 to int8 with 2 mapping to -1
+  int8_t intDir = int8_t(direction);
+  if (intDir == 2) intDir = -1;
+  uint8_t index = getEncoderIndexByPin(pin);
+  (*encoders[index]).setDirection(intDir);
+  success();
+  return true;
+}
+
+
 bool pinAvailableInObjectArray(uint8_t pin, PinObject** objectSlots,uint8_t size)
 {
   for(int i = 0;i<size;i++)
@@ -267,77 +472,11 @@ bool pinAvailable(uint8_t pin)
   return servoAvailable(pin) && encoderAvailable(pin);
 }
 
-bool addServo(uint8_t pin)
-{
-  if (!validPin(pin)) return false;
-  if (!pinAvailable(pin)) return false;
-  uint8_t index = getAvailableSlot((void**)servos,maxServos);
-  servos[index] = new ServoObject(pin);
-  return true;
-}
-bool writeServo(uint8_t pin, uint8_t value)
-{
-  if(!validPin(pin)) return false;
-  if(value > 180) return false;
-  if(servoAvailable(pin)) return false;
-  uint8_t index = getServoIndexByPin(pin);
-  if (index == 255) return false;
-  (*servos[index]).write(value);
-  return true;
-}
-bool detachServo(uint8_t pin)
-{
-  if(!validPin(pin)) return false;
-   if(servoAvailable(pin)) return false;
-    uint8_t index = getServoIndexByPin(pin);
-    while(index != 255)
-    {
-      (*servos[index]).detach();//make arduino stop using the pin for servo communication
-      delete servos[index];//deallocate memory where the servo object was stored
-      servos[index] = NULL;//dereference the memory
-      index = getServoIndexByPin(pin);//check if there is another servo that uses this pin
-   }
-  return true; 
-}
-bool attachEncoder(uint8_t pin,uint8_t secondaryPin)
-{
-  int8_t interruptPin = digitalPinToInterrupt(pin);
-  if (interruptPin<0) return false;// not a valid interrupt pin
-  if(!setupPin(pin,INPUT)) return false;//try to set up the interrupt pin as input. if fails return false
-  
-  bool quadratureEncoder = validPin(secondaryPin);//is it a quadrature encoder? (did the user specify a valid secondary pin)
-  if(quadratureEncoder)
-  {
-    if(!setupPin(secondaryPin,INPUT)) return false;
-  }
-
-  
-  uint8_t index = getAvailableSlot((void**)encoders,numInterruptPins);
-  encoders[index] = new Encoder(pin);
-  if(quadratureEncoder) (*encoders[index]).setSecondaryPin(secondaryPin);
-  switch (index)
-  {
-    case 0:
-      attachInterrupt(interruptPin,encoder0Interrupt,FALLING);
-      break;
-    case 1:
-      attachInterrupt(interruptPin,encoder1Interrupt,FALLING);
-      break;
-  }
-  return true;
-}
 bool validEncoder(uint8_t pin)
 {
   return validPin && !encoderAvailable(pin);
 }
-bool putEncoderCountInMessage(uint8_t pin)
-{
-  if(!validEncoder(pin)) return false;
-  uint8_t index = getEncoderIndexByPin(pin);
-  int count = (*encoders[index]).getCount();
-  putStringInReturnMessage(serialize(count),0);
-  return true; 
-}
+
 bool resetEncoder(uint8_t pin)
 {
   if(!validEncoder(pin)) return false;
@@ -345,33 +484,8 @@ bool resetEncoder(uint8_t pin)
   (*encoders[index]).reset();
   return true;
 }
-bool detachEncoder(uint8_t pin)
-{
-  if(!validEncoder(pin)) return false;
-  uint8_t index = getEncoderIndexByPin(pin);
-  detachInterrupt(index);//index (0 or 1) matches interruptPin
-  delete encoders[index];//deallocate memory for encoder object
-  encoders[index] = NULL;//dereference 
-  return true;
-}
-bool setEncoderDirection(uint8_t pin, uint8_t direction)
-{
-  if(!validEncoder(pin)) return false;
-  if(direction>2) return false;//direction can be 0 (no count), 1 (count positive) or (2 count negative)
-  //convert uint8 to int8 with 2 mapping to -1
-  int8_t intDir = int8_t(direction);
-  if (intDir == 2) intDir = -1;
-  uint8_t index = getEncoderIndexByPin(pin);
-  (*encoders[index]).setDirection(intDir);
-  return true;
-}
-void putStringInReturnMessage(String str, uint8_t index)
-{
-  for (int i = 0; i<str.length(); i++)
-  {
-    returnMessage[index+i] = str[i];
-  }
-}
+
+
 String serialize(int input)
 {
   //obviously each byte is 8 bits, but we cant use 255 or 254 because those are used for a null message and the terminator
@@ -391,6 +505,11 @@ String serialize(int input)
   }
   return out;
 }
+
+
+
+
+
 void encoder0Interrupt()
 {
   if(encoders[0] == NULL) return;
@@ -401,6 +520,17 @@ void encoder1Interrupt()
 {
   if(encoders[1] == NULL) return;
   (*encoders[1]).interrupt();
+}
+
+
+bool validPin(uint8_t pin)
+{
+  return pin<maxPinNum;
+}
+
+void sendDeviceInfo()
+{
+  sendMessage(F("Arduino Uno running server code by Nigel Bess: https://github.com/NigelBess/Arduino-Server"));
 }
 void debug(int in)
 {
