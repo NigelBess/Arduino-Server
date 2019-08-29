@@ -79,7 +79,7 @@ classdef Arduino < handle
             secondaryPin = obj.int8(secondaryPin);
             obj.sendMessageReliable([8,interruptPin,secondaryPin]);
         end
-        function out = getEncoderCount(obj,pin)
+        function out = readEncoder(obj,pin)
             pin = obj.int8(pin);
             reply = obj.sendMessageReliable([9,pin]);
             out = obj.parseInt(reply);

@@ -64,7 +64,7 @@ void invalidPinError(uint8_t pin)
 }
 void unavailablePinError(uint8_t pin)
 {
-  error("Pin" + String(pin) + " is already in use by an encoder or servo.");
+  error("Pin " + String(pin) + " is already in use by an encoder or servo.");
 }
 void findServoError(uint8_t pin)
 {
@@ -275,11 +275,11 @@ bool addServo(uint8_t pin)
   if(!pinAvailable(pin))
   {
     unavailablePinError(pin);
-    success();
     return true;
   }
   uint8_t index = getAvailableSlot((void**)servos,maxServos);
   servos[index] = new ServoObject(pin);
+  success();
   return true;
 }
 bool writeServo(uint8_t pin, uint8_t value)
@@ -384,6 +384,20 @@ bool readEncoder(uint8_t pin)
   sendMessage(serialize(count));
   return true; 
 }
+
+bool resetEncoder(uint8_t pin)
+{
+  if(!validEncoder(pin))
+  {
+    findEncoderError(pin);
+    return true;
+  }
+  uint8_t index = getEncoderIndexByPin(pin);
+  (*encoders[index]).reset();
+  success();
+  return true;
+}
+
 bool detachEncoder(uint8_t pin)
 {
   if(!validEncoder(pin))
@@ -475,14 +489,6 @@ bool pinAvailable(uint8_t pin)
 bool validEncoder(uint8_t pin)
 {
   return validPin && !encoderAvailable(pin);
-}
-
-bool resetEncoder(uint8_t pin)
-{
-  if(!validEncoder(pin)) return false;
-  uint8_t index = getEncoderIndexByPin(pin);
-  (*encoders[index]).reset();
-  return true;
 }
 
 
