@@ -34,6 +34,11 @@ while (time - startTime) < totalTime
 
     arduino.setEncoderDirection(2,1);%function 12
     arduino.checkConnection();%function 253
+    disp(" ");
+    disp(" ");
+    disp(" ");
+    disp(" ");
+    disp("this computer is running a stress test. please do not close MATLAB or log off/shut down etc");
     disp("completed cycle "+i+" in " + string(toc) + " seconds.")
     time = arduino.getTime();
 end
