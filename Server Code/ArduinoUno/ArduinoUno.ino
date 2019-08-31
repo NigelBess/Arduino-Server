@@ -249,7 +249,7 @@ bool readDigital(uint8_t pin)
     invalidPinError(pin);
     return true;
   }
-  sendMessage(byte(digitalRead(pin)));
+  sendMessage(char(digitalRead(pin)));
   return true;
 }
 bool readAnalog(uint8_t pin)
@@ -499,14 +499,13 @@ String serialize(int input)
   uint8_t totalBits = sizeof(input)*8;
   uint8_t bytesNeeded = totalBits/numBitsPerByte + int((totalBits%numBitsPerByte)>0);
   String out;
-  int remainder = 1<<numBitsPerByte;
   input<0 ? out+= char(1) : out+=char(0);
   input = abs(input);
   for (int i = 0; i<bytesNeeded;i++)
   {
     uint8_t shift = numBitsPerByte*(i+1);
-    remainder = input%(1<<shift);
-    out += char(remainder>>(shift-numBitsPerByte));//little endian
+    int remainder = input%(pow(2,shift));
+    out += char(remainder*pow(2,numBitsPerByte-shift);//little endian
     input -= remainder;
   }
   return out;
