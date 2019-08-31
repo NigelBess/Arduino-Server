@@ -49,9 +49,23 @@ void sendMessage(String msg)
 {
   Serial.print(msg+String(char(terminator)));
 }
-void sendMessage(byte msg)
+void sendMessage(int input)
 {
-  sendMessage(String(char(msg)));
+  //obviously each byte is 8 bits, but we cant use 255 or 254 because those are used for a null message and the terminator
+  //so we have to use one less bit per byte when transferring large numbers over multiple bytes
+  uint8_t totalBits = sizeof(input)*8;
+  uint8_t bytesNeeded = totalBits/numBitsPerByte + int((totalBits%numBitsPerByte)>0);
+  uint8_t firstValue = uint8_t(int(input<0));
+  Serial.print(char(firstValue));
+  input = abs(input);
+  for (uint8_t i = 0; i<bytesNeeded;i++)
+  {
+    uint8_t shift = (i+1)*numBitsPerByte;
+    int remainder = input%int(pow(2,shift));
+    Serial.print(char(uint8_t(uint32_t(remainder)>>(shift-numBitsPerByte))));//little endian
+    input -= remainder;
+  }
+  Serial.print(char(terminator));
 }
 void error(String msg)
 {
@@ -249,7 +263,7 @@ bool readDigital(uint8_t pin)
     invalidPinError(pin);
     return true;
   }
-  sendMessage(char(digitalRead(pin)));
+  sendMessage(String(char(digitalRead(pin))));
   return true;
 }
 bool readAnalog(uint8_t pin)
@@ -259,7 +273,7 @@ bool readAnalog(uint8_t pin)
     invalidPinError(pin);
     return true;
   }
-  sendMessage(serialize(int(analogRead(pin))));
+  sendMessage(int(analogRead(pin)));
   return true;
 }
 
@@ -381,7 +395,7 @@ bool readEncoder(uint8_t pin)
   }
   uint8_t index = getEncoderIndexByPin(pin);
   int count = (*encoders[index]).getCount();
-  sendMessage(serialize(count));
+  sendMessage(count);
   return true; 
 }
 
@@ -394,6 +408,11 @@ bool resetEncoder(uint8_t pin)
   }
   uint8_t index = getEncoderIndexByPin(pin);
   (*encoders[index]).reset();
+  if (index>numInterruptPins-1)
+  {
+    error(F("Fncoder exists but failed to find index. (This is a problem with the server side code)"));
+    return true;
+  }
   success();
   return true;
 }
@@ -492,24 +511,7 @@ bool validEncoder(uint8_t pin)
 }
 
 
-String serialize(int input)
-{
-  //obviously each byte is 8 bits, but we cant use 255 or 254 because those are used for a null message and the terminator
-  //so we have to use one less bit per byte when transferring large numbers over multiple bytes
-  uint8_t totalBits = sizeof(input)*8;
-  uint8_t bytesNeeded = totalBits/numBitsPerByte + int((totalBits%numBitsPerByte)>0);
-  String out;
-  input<0 ? out+= char(1) : out+=char(0);
-  input = abs(input);
-  for (int i = 0; i<bytesNeeded;i++)
-  {
-    uint8_t shift = numBitsPerByte*(i+1);
-    int remainder = input%int(pow(2,shift));
-    out += char(int(remainder*pow(2,numBitsPerByte-shift)));//little endian
-    input -= remainder;
-  }
-  return out;
-}
+
 
 
 
