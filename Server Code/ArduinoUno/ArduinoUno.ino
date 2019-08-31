@@ -45,11 +45,6 @@ void loop()
     parse(getIncomingMessage());
   } 
 }
-void sendMessage(char msg)
-{
-  Serial.print(msg);
-  Serial.print(char(terminator));
-}
 void sendMessage(String msg)
 {
   Serial.print(msg+String(char(terminator)));
@@ -61,20 +56,20 @@ void sendMessage(int input)
   uint8_t totalBits = sizeof(input)*8;
   uint8_t bytesNeeded = totalBits/numBitsPerByte + int((totalBits%numBitsPerByte)>0);
   uint8_t firstValue = uint8_t(int(input<0));
-  Serial.print(char(firstValue));
+  Serial.write(firstValue);
   input = abs(input);
   for (uint8_t i = 0; i<bytesNeeded;i++)
   {
     uint8_t shift = (i+1)*numBitsPerByte;
     uint32_t remainder = abs(input)%int(pow(2,shift));
-    Serial.print(char(uint8_t(remainder>>(shift-numBitsPerByte))));//little endian
+    Serial.write(uint8_t(remainder>>(shift-numBitsPerByte)));//little endian
     input -= remainder;
   }
-  Serial.print(char(terminator));
+  Serial.write(terminator);
 }
 void error(String msg)
 {
-  Serial.print(char(errorByte));
+  Serial.write(errorByte);
   sendMessage(msg);
 }
 void invalidPinError(uint8_t pin)
@@ -268,7 +263,8 @@ bool readDigital(uint8_t pin)
     invalidPinError(pin);
     return true;
   }
- sendMessage(char(digitalRead(pin)));
+  digitalRead(pin) ? Serial.write(1) : Serial.write(0);
+ Serial.write(terminator);
   return true;
 }
 bool readAnalog(uint8_t pin)
