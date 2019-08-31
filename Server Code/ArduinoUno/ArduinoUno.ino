@@ -61,8 +61,8 @@ void sendMessage(int input)
   for (uint8_t i = 0; i<bytesNeeded;i++)
   {
     uint8_t shift = (i+1)*numBitsPerByte;
-    int remainder = input%int(pow(2,shift));
-    Serial.print(char(uint8_t(uint32_t(remainder)>>(shift-numBitsPerByte))));//little endian
+    uint32_t remainder = abs(input)%int(pow(2,shift));
+    Serial.print(char(uint8_t(remainder>>(shift-numBitsPerByte))));//little endian
     input -= remainder;
   }
   Serial.print(char(terminator));
@@ -377,10 +377,10 @@ bool attachEncoder(uint8_t pin,uint8_t secondaryPin)
   switch (index)
   {
     case 0:
-      attachInterrupt(interruptPin,encoder0Interrupt,FALLING);
+      attachInterrupt(interruptPin,encoder0Interrupt,CHANGE);
       break;
     case 1:
-      attachInterrupt(interruptPin,encoder1Interrupt,FALLING);
+      attachInterrupt(interruptPin,encoder1Interrupt,CHANGE);
       break;
   }
   success();

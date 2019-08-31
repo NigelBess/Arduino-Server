@@ -36,7 +36,9 @@ class Encoder : public PinObject
       count+=direction; 
       return;
     }
-    digitalRead(secondaryPin)? count+=direction : count-=direction;
+    bool a = digitalRead(pin);
+    bool b = digitalRead(secondaryPin);
+    a^b ? count+=direction : count-=direction;
   }
   int getCount()
   {
