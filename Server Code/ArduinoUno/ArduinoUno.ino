@@ -263,7 +263,8 @@ bool readDigital(uint8_t pin)
     invalidPinError(pin);
     return true;
   }
-  sendMessage(String(char(digitalRead(pin))));
+ Serial.print(char(digitalRead(pin)));
+ Serial.print(terminator);
   return true;
 }
 bool readAnalog(uint8_t pin)
