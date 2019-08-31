@@ -504,8 +504,8 @@ String serialize(int input)
   for (int i = 0; i<bytesNeeded;i++)
   {
     uint8_t shift = numBitsPerByte*(i+1);
-    int remainder = input%(pow(2,shift));
-    out += char(remainder*pow(2,numBitsPerByte-shift);//little endian
+    int remainder = input%int(pow(2,shift));
+    out += char(int(remainder*pow(2,numBitsPerByte-shift)));//little endian
     input -= remainder;
   }
   return out;
