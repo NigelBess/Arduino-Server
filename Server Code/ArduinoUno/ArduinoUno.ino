@@ -45,6 +45,11 @@ void loop()
     parse(getIncomingMessage());
   } 
 }
+void sendMessage(char msg)
+{
+  Serial.print(msg);
+  Serial.print(char(terminator));
+}
 void sendMessage(String msg)
 {
   Serial.print(msg+String(char(terminator)));
@@ -263,8 +268,7 @@ bool readDigital(uint8_t pin)
     invalidPinError(pin);
     return true;
   }
- Serial.print(char(digitalRead(pin)));
- Serial.print(terminator);
+ sendMessage(char(digitalRead(pin)));
   return true;
 }
 bool readAnalog(uint8_t pin)
