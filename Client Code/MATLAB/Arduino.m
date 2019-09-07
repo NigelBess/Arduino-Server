@@ -60,7 +60,7 @@ classdef Arduino < handle
         end
         function attachServo(obj,pin)
             pin = obj.int8(pin);
-            reply = obj.sendMessageReliable([5,pin]);
+            obj.sendMessageReliable([5,pin]);
         end
         function writeServo(obj,pin,angle)
             pin = obj.int8(pin);
@@ -141,16 +141,16 @@ classdef Arduino < handle
             %those
             msg(msg==255) = [];
             try
-                flushoutput(obj.comPort);
+                fwrite(obj.comPort,[msg,obj.terminator]);
             catch
                 error("Arduino is not connected. Run Arduino.connect() to connect.");
             end
-            fwrite(obj.comPort,[msg,obj.terminator]);
         end
         function out = sendMessageReliable(obj,msg)
             obj.sendMessage(msg);
             out = obj.getMessage();
             if out(1) == obj.errorByte
+                obj.connect();
                 error(native2unicode(out(2:end)));
             end
         end
