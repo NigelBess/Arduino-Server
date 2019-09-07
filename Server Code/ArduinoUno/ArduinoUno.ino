@@ -98,7 +98,8 @@ void runtimeError()
 }
 void success()
 {
-  sendMessage(byte(0));
+  Serial.write(0);
+  Serial.write(terminator);
 }
 
 
@@ -119,7 +120,11 @@ byte* getIncomingMessage()
       currentByte = Serial.read();
     }
     while((currentByte == 255)&&((millis()-startMessageTime))<serialTimeOutTime);
-    if (currentByte == 255) return message;
+    if (currentByte == 255)
+    {
+      message[0] = 252;
+      return message;
+    }
     message[index] = currentByte;
     index++;
     if(currentByte==terminator) return message;
@@ -173,6 +178,9 @@ void parse(byte* message)
     case 12:
        Try(setEncoderDirection(message[1],message[2]));
        return;
+    case 252:
+      error("Serial communication timed out, or no terminator was sent.");
+      return;
     case 253://checkConnection
       message[1]==0 ? sendDeviceInfo() : success();
       return;

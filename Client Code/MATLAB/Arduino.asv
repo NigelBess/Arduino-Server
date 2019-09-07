@@ -145,7 +145,7 @@ classdef Arduino < handle
             catch
                 error("Arduino is not connected. Run Arduino.connect() to connect.");
             end
-            flushoutput(obj.comPort);
+                flushoutput(obj.comPort);
         end
         function out = sendMessageReliable(obj,msg)
             obj.sendMessage(msg);
