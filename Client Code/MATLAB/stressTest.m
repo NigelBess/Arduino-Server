@@ -1,5 +1,5 @@
 clearAll;
-arduino = Arduino('COM4');
+arduino = Arduino('COM7');
 arduino.connect();
 startTime = arduino.getTime();
 time = startTime;

@@ -13,7 +13,7 @@ const byte terminator = 254;//byte representing end of message
 const byte errorByte = 253;//used in the return message to signify an error
 const byte successByte = 0;//used in the return message to signify successful execution of a function
 const byte maxAnalogValue = 252;//corresponds to 255 in arduino's analog read/write functions
-
+const byte timeOutByte = 252;//used to represent message read timeout as function param
 
 const uint8_t startDelay = 100;//ms
 const uint8_t serialTimeOutTime = 50;//ms
@@ -122,7 +122,7 @@ byte* getIncomingMessage()
     while((currentByte == 255)&&((millis()-startMessageTime))<serialTimeOutTime);
     if (currentByte == 255)
     {
-      message[0] = 252;
+      message[0] = timeOutByte;
       return message;
     }
     message[index] = currentByte;
@@ -178,7 +178,7 @@ void parse(byte* message)
     case 12:
        Try(setEncoderDirection(message[1],message[2]));
        return;
-    case 252:
+    case timeOutByte:
       error("Serial communication timed out, or no terminator was sent.");
       return;
     case 253://checkConnection
