@@ -16,7 +16,7 @@ const byte maxAnalogValue = 252;//corresponds to 255 in arduino's analog read/wr
 const byte timeOutByte = 252;//used to represent message read timeout as function param
 
 const uint8_t startDelay = 100;//ms
-const uint8_t serialTimeOutTime = 50;//ms
+const uint16_t serialTimeOutTime = 500;//ms
 byte* message = new byte[maxMessageLength];//incoming message buffer
 
 const uint8_t maxPinNum = 19;
@@ -108,7 +108,7 @@ byte* getIncomingMessage()
 {
   for (int i = 0;i<maxMessageLength;i++)
   {
-    message[i] = terminator;
+    message[i] = 0;
   }
   uint8_t index = 0;
   while(index<maxMessageLength)

@@ -1,11 +1,11 @@
 clearAll;
-arduino = Arduino('COM7');
+arduino = Arduino('COM5');
 arduino.connect();
 while true
     msg = input('Message to send arduino: ');
     tic
     try
-        response = arduino.sendMessageReliable(msg);
+        response = arduino.sendMessageReliable(msg,false);
     catch e
         disp(e.message)
         response = "";
