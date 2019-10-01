@@ -301,7 +301,18 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 167343544}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1033349885}
+        m_MethodName: Reset
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_TypeName: UnityEngine.UI.Button+ButtonClickedEvent, UnityEngine.UI, Version=1.0.0.0,
       Culture=neutral, PublicKeyToken=null
 --- !u!114 &167343544
@@ -845,6 +856,18 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 301635259}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &332934865 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3255681866607031748, guid: b1372e911ac03b44ca0c94517382587d,
+    type: 3}
+  m_PrefabInstance: {fileID: 204520889}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d199490a83bb2b844b9695cbf13b01ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &359728931 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3255681866607031748, guid: b1372e911ac03b44ca0c94517382587d,
@@ -1337,6 +1360,8 @@ MonoBehaviour:
   arduino: {fileID: 1033349886}
   cm: {fileID: 1033349888}
   welcomeErrorText: {fileID: 1694738048}
+  manualInputField: {fileID: 332934865}
+  manualInputReturnText: {fileID: 1937182712}
 --- !u!114 &1033349886
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1935,7 +1960,18 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1423389624}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1033349885}
+        m_MethodName: SendMessageManual
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_TypeName: UnityEngine.UI.Button+ButtonClickedEvent, UnityEngine.UI, Version=1.0.0.0,
       Culture=neutral, PublicKeyToken=null
 --- !u!114 &1423389624
@@ -2337,7 +2373,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
   m_AnchoredPosition: {x: 0, y: -10}
-  m_SizeDelta: {x: 160, y: 30}
+  m_SizeDelta: {x: 800, y: 30}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1937182712
 MonoBehaviour:
@@ -2366,13 +2402,13 @@ MonoBehaviour:
     m_BestFit: 0
     m_MinSize: 10
     m_MaxSize: 40
-    m_Alignment: 0
+    m_Alignment: 1
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Response Text
+  m_Text: response text ______________________________________________________________________________
 --- !u!222 &1937182713
 CanvasRenderer:
   m_ObjectHideFlags: 0

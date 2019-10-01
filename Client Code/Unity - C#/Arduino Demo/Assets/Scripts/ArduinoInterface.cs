@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 public class ArduinoInterface : MonoBehaviour
 {
-    private static byte[] terminator = {254};
+    private static byte terminator = 254;
     private byte[] incomingMessageBuffer = new byte[512];
     private const byte errorByte = 253;
     private const int readTimeout = 500;//ms
@@ -21,17 +21,56 @@ public class ArduinoInterface : MonoBehaviour
     {
         port.BaudRate = 250000;
         port.DataBits = 8;
+        port.NewLine = ((char)terminator).ToString();
+        port.Encoding = System.Text.Encoding.UTF8;
         port.Open();
+        port.DiscardOutBuffer();
+        port.DiscardInBuffer();
+        WaitForConnection();
+
+    }
+    public void WaitForConnection()
+    {
+        bool connected = CheckConnection();
+        while (!connected)
+        {
+            connected = CheckConnection();
+        }
+    }
+    public bool CheckConnection()
+    {
+        SendMessage(new byte[1] { 253 });
+        byte[] response = GetMessage(false);
+        return (response[0] == 0);
+    }
+    public void Disconnect()
+    {
+        port.Close();
+    }
+    public byte[] sendMessageReliable(byte[] message)
+    {
+        SendMessage(message);
+        
+        byte[] returnMsg =  GetMessage();
+        return returnMsg;
+        
     }
     public void SendMessage(byte[] message)
     {
+        byte[] terminatedMessage = new byte[message.Length + 1];
         for (int i = 0; i < message.Length; i++)
         {
-            port.Write(message,0,message.Length);
+            terminatedMessage[i] = message[i];
         }
-        port.Write(terminator,0,1);
+        terminatedMessage[terminatedMessage.Length - 1] = terminator;
+        port.Write(terminatedMessage,0,terminatedMessage.Length);
+        port.DiscardOutBuffer();
     }
     public byte[] GetMessage()
+    {
+        return GetMessage(true);
+    }
+    public byte[] GetMessage(bool safe)
     {
         int i = 0;
         Stopwatch timer = Stopwatch.StartNew();
@@ -45,15 +84,14 @@ public class ArduinoInterface : MonoBehaviour
                 }
             }
             byte incoming = (byte)port.ReadByte();
-            if (incoming == terminator[0])
+            if (incoming == terminator)
             {
                 break;
             }
             incomingMessageBuffer[i] = incoming;
             i++;
         }
-        i--;
-        if (incomingMessageBuffer[0] == errorByte)
+        if (safe && incomingMessageBuffer[0] == errorByte)
         {
             string errorMsg = "";
             for (int j = 1; j < i; j++)
@@ -67,6 +105,7 @@ public class ArduinoInterface : MonoBehaviour
         {
             output[j] = incomingMessageBuffer[j];
         }
+        port.DiscardInBuffer();
         return output;
     }
 }
