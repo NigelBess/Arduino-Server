@@ -60,7 +60,7 @@ public class GameManager : MonoBehaviour
         byte[] returnMessage = new byte[0];
         try
         {
-            returnMessage = arduino.sendMessageReliable(arduinoMessage);
+            returnMessage = arduino.SendMessageReliable(arduinoMessage);
             Log(returnMessage);
             Debug.Log("message send successful");
         }

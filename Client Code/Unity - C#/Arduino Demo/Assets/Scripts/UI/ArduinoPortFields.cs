@@ -13,6 +13,7 @@ public class ArduinoPortFields : InputFields
     [SerializeField] private InputField encoderSecondaryField;
     [SerializeField] private InputField iRSensorField;
     [SerializeField] private InputField solenoidField;
+    [SerializeField] private Servo leftServo;
 
     private void Awake()
     {
@@ -31,5 +32,6 @@ public class ArduinoPortFields : InputFields
         ArduinoData.irSensorPin = iRSensorField.text;
         ArduinoData.solenoidPin = solenoidField.text;
         base.Save();
+        leftServo.SetPin(ArduinoData.leftServoPin);
     }
 }

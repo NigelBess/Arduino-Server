@@ -47,7 +47,7 @@ public class ArduinoInterface : MonoBehaviour
     {
         port.Close();
     }
-    public byte[] sendMessageReliable(byte[] message)
+    public byte[] SendMessageReliable(byte[] message)
     {
         SendMessage(message);
         
@@ -107,5 +107,13 @@ public class ArduinoInterface : MonoBehaviour
         }
         port.DiscardInBuffer();
         return output;
+    }
+    public byte[] AttachServo(int pin)
+    {
+        return SendMessageReliable(new byte[2] {6, (byte)pin});
+    }
+    public byte[] WriteServo(int pin, int angle)
+    {
+        return SendMessageReliable(new byte[3] { 7, (byte)pin, (byte)angle });
     }
 }
