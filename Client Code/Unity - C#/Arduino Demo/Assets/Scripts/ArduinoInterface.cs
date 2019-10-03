@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO.Ports;
 using System.Diagnostics;
+using System.Threading;
 
 public class ArduinoInterface : MonoBehaviour
 {
@@ -15,7 +16,13 @@ public class ArduinoInterface : MonoBehaviour
     public void SetPort(string nPortName)
     {
         port = new SerialPort();
+        port.Close();
         port.PortName = nPortName;
+        port.DtrEnable = false;
+    }
+    private void OnApplicationQuit()
+    {
+        port.DtrEnable = true;
     }
     public void Connect()
     {
@@ -110,10 +117,11 @@ public class ArduinoInterface : MonoBehaviour
     }
     public byte[] AttachServo(int pin)
     {
-        return SendMessageReliable(new byte[2] {6, (byte)pin});
+        return SendMessageReliable(new byte[2] {5, (byte)pin});
     }
     public byte[] WriteServo(int pin, int angle)
     {
-        return SendMessageReliable(new byte[3] { 7, (byte)pin, (byte)angle });
+        return SendMessageReliable(new byte[3] { 6, (byte)pin, (byte)angle });
     }
+
 }

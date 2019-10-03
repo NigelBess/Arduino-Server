@@ -2923,10 +2923,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Left Servo
       objectReference: {fileID: 0}
+    - target: {fileID: 477867560, guid: 9ddda5775c8818b4593bf431999d3866, type: 3}
+      propertyPath: arduino
+      value: 
+      objectReference: {fileID: 1033349886}
     - target: {fileID: 579656411990353075, guid: 9ddda5775c8818b4593bf431999d3866,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: 0.9163663
       objectReference: {fileID: 0}
     - target: {fileID: 579656411990353075, guid: 9ddda5775c8818b4593bf431999d3866,
         type: 3}
@@ -2936,27 +2940,27 @@ PrefabInstance:
     - target: {fileID: 579656411990353075, guid: 9ddda5775c8818b4593bf431999d3866,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 0.23053825
       objectReference: {fileID: 0}
     - target: {fileID: 579656411990353075, guid: 9ddda5775c8818b4593bf431999d3866,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 579656411990353075, guid: 9ddda5775c8818b4593bf431999d3866,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0.24397652
       objectReference: {fileID: 0}
     - target: {fileID: 579656411990353075, guid: 9ddda5775c8818b4593bf431999d3866,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 579656411990353075, guid: 9ddda5775c8818b4593bf431999d3866,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: 0.9697811
       objectReference: {fileID: 0}
     - target: {fileID: 579656411990353075, guid: 9ddda5775c8818b4593bf431999d3866,
         type: 3}
@@ -2971,17 +2975,13 @@ PrefabInstance:
     - target: {fileID: 579656411990353075, guid: 9ddda5775c8818b4593bf431999d3866,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
+      value: -28.243002
       objectReference: {fileID: 0}
     - target: {fileID: 579656411990353075, guid: 9ddda5775c8818b4593bf431999d3866,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 477867560, guid: 9ddda5775c8818b4593bf431999d3866, type: 3}
-      propertyPath: arduino
-      value: 
-      objectReference: {fileID: 1033349886}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9ddda5775c8818b4593bf431999d3866, type: 3}
 --- !u!1001 &8005451792212946837

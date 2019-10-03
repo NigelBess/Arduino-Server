@@ -8,7 +8,7 @@ public class ServoArm : MonoBehaviour
     private Transform parent;
     bool clicked;
     private float hitHeight;
-    private const float refreshTime = 0.1f;
+    private const float refreshTime = 0.01f;
     private float lastSendTime = 0;
     private void Awake()
     {
@@ -28,12 +28,12 @@ public class ServoArm : MonoBehaviour
         plane.Raycast(ray,out enter);
         Vector3 hitPoint = ray.GetPoint(enter);
         Quaternion newRot = Quaternion.LookRotation(parent.position-hitPoint, Vector3.up);
-        float angle = newRot.eulerAngles.y;
+        float angle = normalized(newRot.eulerAngles.y-parent.parent.rotation.eulerAngles.y);
         if (angle > 270) angle = 0;
         angle = Mathf.Clamp(angle, 0, 180);
-        parent.rotation = Quaternion.Euler(0,angle,0);
+        parent.localRotation = Quaternion.Euler(0,angle,0);
         Debug.DrawLine(parent.position,hitPoint);
-        SendAngle(angle);
+        SendAngle(180-angle);
 
     }
     private void OnMouseDown()
@@ -50,9 +50,19 @@ public class ServoArm : MonoBehaviour
     {
         return Mathf.Atan(x - parent.transform.position.x/ z-parent.transform.position.z) * 180 / Mathf.PI;
     }
+    private float normalized(float angle)
+    {
+        Debug.Log(angle);
+        angle %= 360;
+        if (angle < 0)
+        {
+            angle += 360;
+        }
+        return angle;
+    }
     private void SendAngle(float angle)
     {
-        if((Time.time - lastSendTime)>refreshTime)
+        if ((Time.time - lastSendTime) < refreshTime) return;
         servo.SendAngle(angle);
         lastSendTime = Time.time;
         Debug.Log(angle);

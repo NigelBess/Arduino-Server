@@ -20,4 +20,13 @@ public class GameFunctions : MonoBehaviour
             if (menus[i] != null) menus[i].SetActive(i == num);
         }
     }
+    public static void LogBytes(byte[] msg)
+    {
+        string str = "";
+        for (int i = 0; i < msg.Length; i++)
+        {
+            str += (msg[i]).ToString() + " ";
+        }
+        Debug.Log(str);
+    }
 }
