@@ -8,6 +8,7 @@ classdef Arduino < handle
         connectionTimeOut = 2;
         serialTimeOut = 1;
         maxAnalogRead = 5;%volts
+        maxAnalogWrite = 5;%volts
     end
     properties(Access = private)
         comPort;
@@ -43,10 +44,12 @@ classdef Arduino < handle
             state = obj.int8(state);
             obj.sendMessageReliable([1,pin,state]);
         end
-        function analogWrite(obj,pin,state)
+        function analogWrite(obj,pin,volts)
             pin = obj.int8(pin);
-            state = obj.int8(state);
-            obj.sendMessageReliable([2,pin,state]);
+            volts = volts/obj.maxAnalogWrite*252;
+            volts = obj.int8(volts);
+            disp(volts);
+            obj.sendMessageReliable([2,pin,volts]);
         end
         function out = digitalRead(obj,pin)
             pin = obj.int8(pin);
