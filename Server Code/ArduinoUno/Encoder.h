@@ -7,7 +7,7 @@ class Encoder : public PinObject
 {
   protected: 
   const uint8_t maxPinNum = 19;
-  int count = 0;
+  long int count = 0;
   uint8_t secondaryPin = 253;
   int8_t direction = 1;
   
