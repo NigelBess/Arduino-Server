@@ -61,9 +61,9 @@ void sendMessage(int input)
   for (uint8_t i = 0; i<bytesNeeded;i++)
   {
     uint8_t shift = (i+1)*numBitsPerByte;
-    uint32_t remainder = abs(input)%int(pow(2,shift));
-    Serial.write(uint8_t(remainder>>(shift-numBitsPerByte)));//little endian
-    input -= remainder;
+    uint32_t remainder = abs(input)%int(pow(2,numBitsPerByte));
+    input >>= shift;
+    Serial.write(uint8_t(remainder));//little endian
   }
   Serial.write(terminator);
 }
